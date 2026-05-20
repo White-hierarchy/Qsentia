@@ -1,9 +1,8 @@
 'use client';
 
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
-import Link from 'next/link';
 
-export default function ResearchPage() {
+export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#fbfbfb] text-black">
       <QSentiaMotionBackground />
@@ -38,12 +37,14 @@ export default function ResearchPage() {
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link
-            href="/dashboard"
-            className="bg-[#4b3fd1] px-14 py-5 text-lg font-medium text-white shadow-[0_24px_80px_rgba(75,63,209,0.25)] transition hover:bg-[#372db8]"
-          >
-            View Live Research Terminal
-          </Link>
+        <button
+  onClick={() => {
+    window.location.href = '/dashboard';
+  }}
+  className="bg-[#4b3fd1] px-14 py-5 text-lg font-medium text-white shadow-[0_24px_80px_rgba(75,63,209,0.25)] transition hover:bg-[#372db8]"
+>
+  View Live Research Terminal
+</button>
 
           <a
             href="mailto:Lucas.Zarzeczny@qsentia.com?subject=QSentia Investor Information Request"
