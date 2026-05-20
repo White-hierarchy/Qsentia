@@ -1,0 +1,242 @@
+/* src/styles/citadel-theme.css */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fillBar {
+  from { width: 0%; }
+  to { width: var(--target-width); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Base and Utility */
+.citadel-bg {
+  background-color: #ffffff;
+  color: #111827; /* slate-900 */
+}
+
+/* Animations */
+.animate-on-scroll {
+  opacity: 0;
+}
+.animate-on-scroll.is-visible {
+  opacity: 1;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.fade-in-left {
+  animation: fadeInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.scale-in {
+  animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Navigation */
+.citadel-nav {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.citadel-nav-link {
+  position: relative;
+  color: #374151; /* slate-700 */
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  padding-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.citadel-nav-link:hover {
+  color: #111827; /* slate-900 */
+}
+
+.citadel-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0; 
+  bottom: 0;
+  width: 0; 
+  height: 1px;
+  background-color: #111827;
+  transition: width 0.3s ease;
+}
+
+.citadel-nav-link:hover::after {
+  width: 100%;
+}
+
+/* Typography styles */
+.text-citadel-heading {
+  color: #111827;
+  font-family: 'Georgia', serif;
+  font-weight: 400;
+}
+
+.text-citadel-subheading {
+  color: #4b5563; /* slate-600 */
+  font-weight: 300;
+}
+
+.text-citadel-accent {
+  color: #2563eb; /* indigo-600 */
+}
+
+/* Cards & Hover Effects */
+.citadel-card {
+  background-color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px; /* Slightly less rounded than vibrant */
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.citadel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+}
+
+/* Pending Metrics */
+.pending-card-citadel {
+  background-color: #f9fafb; /* slate-50 */
+  border-top: 2px solid #e5e7eb; /* slate-200 */
+  padding: 24px;
+  text-align: left;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pending-card-citadel:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-top-color: #2563eb; /* indigo-600 accent on hover */
+}
+
+.pending-value-citadel {
+  font-size: 2.5rem;
+  font-family: 'Georgia', serif;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.pending-label-citadel {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280; /* slate-500 */
+  font-weight: 500;
+}
+
+/* Signal Strength Bars */
+.signal-bar-bg-citadel {
+  width: 100%;
+  height: 4px; /* Thinner */
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.signal-bar-fill-citadel {
+  height: 100%;
+  background-color: #2563eb;
+  border-radius: 2px;
+  /* Animation mapped in the component */
+}
+.is-visible .signal-bar-fill-citadel {
+  animation: fillBar 1.5s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
+}
+
+/* Buttons */
+.citadel-btn-primary {
+  background-color: #111827;
+  color: #ffffff;
+  padding: 14px 32px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.citadel-btn-primary:hover {
+  background-color: #374151;
+}
+
+.citadel-btn-secondary {
+  background-color: transparent;
+  color: #111827;
+  border: 1px solid #d1d5db; /* slate-300 */
+  padding: 14px 32px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  display: inline-block;
+  text-align: center;
+}
+
+.citadel-btn-secondary:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Layout Utilities */
+.section-padding {
+  padding: 120px 24px;
+}
