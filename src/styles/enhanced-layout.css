@@ -1,0 +1,234 @@
+/* ========== 1. Section Background Alternation ========== */
+.section-bg-light {
+  background-color: #f8f9fa;
+  padding: 80px 0;
+}
+
+.section-bg-white {
+  background-color: #ffffff;
+  padding: 80px 0;
+}
+
+/* ========== 2. Improved "Pending" Card Styling ========== */
+.pending-metric-card {
+  border: 2px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  background: white;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pending-metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+.pending-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pending-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin: 12px 0;
+}
+
+.pending-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+/* ========== 3. 2x2 Grid for Four Pillars ========== */
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+  margin: 48px 0;
+}
+
+.pillar-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.pillar-card:hover {
+  box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15);
+  transform: translateY(-4px);
+}
+
+.pillar-number {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0055ff, #00aaff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+/* ========== 4. Signal Strength Progress Bars ========== */
+.signal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.signal-name {
+  font-weight: 600;
+  width: 140px;
+}
+
+.signal-bar-container {
+  flex: 1;
+  margin: 0 16px;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.signal-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0055ff, #00aaff);
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+
+.signal-value {
+  font-weight: 700;
+  min-width: 45px;
+  text-align: right;
+}
+
+/* ========== 5. Sticky Navigation ========== */
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #1e293b;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: #0055ff;
+}
+
+/* ========== 6. Floating CTA Button ========== */
+.floating-cta {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  background: #0055ff;
+  color: white;
+  border: none;
+  border-radius: 60px;
+  padding: 14px 28px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,85,255,0.3);
+  z-index: 999;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.floating-cta.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.floating-cta:hover {
+  background: #0040cc;
+  transform: translateY(-2px);
+}
+
+/* ========== 7. Typography Hierarchy ========== */
+.hero-title {
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #1e293b, #0055ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-subtitle {
+  font-size: 22px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.4;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* ========== 8. Consistent Card Styling ========== */
+.card-uniform {
+  border-radius: 20px;
+  padding: 28px;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.card-uniform:hover {
+  box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15);
+}
+
+/* ========== 9. Responsive Grid ========== */
+@media (max-width: 768px) {
+  .pillars-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  
+  .hero-title {
+    font-size: 36px;
+  }
+  
+  .hero-subtitle {
+    font-size: 18px;
+  }
+  
+  .nav-links {
+    display: none;
+  }
+}

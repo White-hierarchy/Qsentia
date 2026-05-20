@@ -6,6 +6,7 @@ import useSWR from 'swr';
 import { useMemo, useState } from 'react';
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
 import { fmtNum, fmtPct } from '@/lib/metrics';
+import '../src/styles/enhanced-layout.css';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -247,46 +248,46 @@ export default function HomePage() {
       <QSentiaMotionBackground />
 
       {/* NAVIGATION */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 border-b ${isDark ? 'border-white/10 bg-[#11102a]/70' : 'border-[#e0e0f7] bg-white/70'} backdrop-blur-xl`}>
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center">
-            <Image
-              src="/logo/Qsentia Logo Bg transparent.png"
-              alt="QSentia Logo"
-              width={200}
-              height={60}
-              className="h-10 w-auto"
-              priority
-            />
-          </div>
-          <div className="hidden items-center gap-6 text-sm font-medium md:flex">
-            <a href="#strategy" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Strategy</a>
-            <a href="#framework" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Framework</a>
-            <a href="#performance" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Performance</a>
-            <a href="#approach" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Approach</a>
-            <button
-              type="button"
-              onClick={() => setIsDark((prev) => !prev)}
-              className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}
-            >
-              {isDark ? 'Light' : 'Dark'}
-            </button>
-            <a href="mailto:Lucas.Zarzeczny@qsentia.com" className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}>Contact</a>
-          </div>
+      <nav className="sticky-nav">
+        <div className="flex items-center">
+          <Image
+            src="/logo/Qsentia Logo Bg transparent.png"
+            alt="QSentia Logo"
+            width={200}
+            height={60}
+            className="h-10 w-auto"
+            priority
+          />
+        </div>
+        <div className="nav-links">
+          <a href="#strategy">Strategy</a>
+          <a href="#framework">Framework</a>
+          <a href="#performance">Performance</a>
+          <a href="#approach">Approach</a>
+          <button
+            type="button"
+            onClick={() => setIsDark((prev) => !prev)}
+            className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}
+          >
+            {isDark ? 'Light' : 'Dark'}
+          </button>
         </div>
       </nav>
 
+      {/* FLOATING CTA */}
+      <a href="mailto:Lucas.Zarzeczny@qsentia.com" className="floating-cta visible">Contact</a>
+
       {/* HERO SECTION */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center pt-32">
+      <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center pt-32 section-bg-light">
         <div className={`mb-8 inline-flex items-center gap-2 rounded-full border px-5 py-2 text-xs font-semibold shadow-sm backdrop-blur-md ${isDark ? 'border-white/10 bg-white/10 text-[#a5b4fc]' : 'border-[#bdbdf7] bg-white/80 text-[#4f46e5]'}`}>
           <Icon name="star" className="h-4 w-4" />
           Where intelligent reinforcement learning meets market perception
         </div>
-        <h1 className={`font-serif text-5xl md:text-7xl font-normal leading-tight mb-4 ${textPrimary}`}>
+        <h1 className="hero-title">
           More Alpha<br />
-          <em className={`not-italic ${accentText}`}>Less Risk</em>
+          <em className="not-italic">Less Risk</em>
         </h1>
-        <p className={`mx-auto mb-8 max-w-xl text-lg font-light ${textSecondary}`}>
+        <p className="hero-subtitle mx-auto mb-8 max-w-xl">
           Qsentia combines advanced BR-PPO reinforcement learning with real-time market intelligence to deliver institutional-grade quantitative alpha to every investor.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -304,8 +305,8 @@ export default function HomePage() {
       {/* STAT STRIP */}
       <div className={`relative z-10 backdrop-blur border-y py-8 ${isDark ? 'bg-white/5 border-white/10' : 'bg-white/70 border-[#e0e0f7]'}`}>
         <div className="mx-auto grid max-w-5xl grid-cols-2 md:grid-cols-4 gap-6 px-6">
-          <div className="text-center">
-            <div className={`font-serif text-3xl ${textPrimary}`}>
+          <div className="pending-metric-card">
+            <div className="pending-value">
               {annualizedLabel === 'Pending' ? (
                 annualizedLabel
               ) : (
@@ -315,14 +316,14 @@ export default function HomePage() {
                 </>
               )}
             </div>
-            <div className={`text-xs mt-1 ${textMuted}`}>Annualised Alpha</div>
+            <div className="pending-label">Annualised Alpha</div>
           </div>
-          <div className="text-center">
-            <div className={`font-serif text-3xl ${textPrimary}`}>{fmtNum(sharpe, 2)}</div>
-            <div className={`text-xs mt-1 ${textMuted}`}>Sharpe Ratio</div>
+          <div className="pending-metric-card">
+            <div className="pending-value">{fmtNum(sharpe, 2)}</div>
+            <div className="pending-label">Sharpe Ratio</div>
           </div>
-          <div className="text-center">
-            <div className={`font-serif text-3xl ${textPrimary}`}>
+          <div className="pending-metric-card">
+            <div className="pending-value">
               {hitRateLabel === 'Pending' ? (
                 hitRateLabel
               ) : (
@@ -332,10 +333,10 @@ export default function HomePage() {
                 </>
               )}
             </div>
-            <div className={`text-xs mt-1 ${textMuted}`}>Signal Accuracy</div>
+            <div className="pending-label">Signal Accuracy</div>
           </div>
-          <div className="text-center">
-            <div className={`font-serif text-3xl ${textPrimary}`}>
+          <div className="pending-metric-card">
+            <div className="pending-value">
               {drawdownLabel === 'Pending' ? (
                 drawdownLabel
               ) : (
@@ -345,16 +346,16 @@ export default function HomePage() {
                 </>
               )}
             </div>
-            <div className={`text-xs mt-1 ${textMuted}`}>Max Drawdown</div>
+            <div className="pending-label">Max Drawdown</div>
           </div>
         </div>
       </div>
 
       {/* STRATEGY SECTION */}
-      <section id="strategy" className="relative z-10 py-24 bg-transparent">
+      <section id="strategy" className="relative z-10 section-bg-white">
         <div className="container mx-auto max-w-5xl px-6">
-          <div className={`mb-2 font-bold uppercase tracking-widest text-xs ${accentText}`}>Investment Strategy</div>
-          <h2 className={`font-serif text-3xl md:text-5xl mb-8 ${textPrimary}`}>Machine Learning<br />Equity Quant (MLEQ)</h2>
+          <div className="font-bold uppercase tracking-widest text-xs pending-label mb-2">Investment Strategy</div>
+          <h2 className="section-title">Machine Learning<br />Equity Quant (MLEQ)</h2>
           <div className="grid md:grid-cols-2 gap-12 items-center mt-8">
             <div>
               <div className="flex gap-8 mb-6">
@@ -414,22 +415,22 @@ export default function HomePage() {
       </section>
 
       {/* PILLARS */}
-      <section id="pillars" className={`relative z-10 py-24 ${isDark ? 'bg-[#11102a]' : 'bg-white/40'} backdrop-blur`}>
+      <section id="pillars" className="relative z-10 py-24 section-bg-light backdrop-blur">
         <div className="mx-auto max-w-5xl px-6">
           <div className="text-center mb-10">
-            <div className={`font-bold uppercase tracking-widest text-xs ${accentText}`}>Investment Framework</div>
-            <h2 className={`font-serif text-3xl md:text-5xl ${textPrimary}`}>Our Investment Thesis</h2>
-            <p className={`mt-2 ${textSecondary}`}>Four pillars that form the backbone of every capital allocation decision we make.</p>
+            <div className="font-bold uppercase tracking-widest text-xs pending-label">Investment Framework</div>
+            <h2 className="section-title">Our Investment Thesis</h2>
+            <p className="mt-2 text-neutral-600">Four pillars that form the backbone of every capital allocation decision we make.</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="pillars-grid">
             {pillars.map((pillar) => (
-              <div key={pillar.number} className={`rounded-2xl p-8 shadow-sm hover:shadow-lg transition border ${cardClass}`}>
-                <div className={`text-xs font-mono mb-3 ${accentText}`}>{pillar.number} —</div>
-                <div className={`h-10 w-10 mb-3 rounded-xl border flex items-center justify-center ${isDark ? 'border-white/20 bg-white/10 text-[#a5b4fc]' : 'border-[#bdbdf7] bg-[#f4f4ff] text-[#4f46e5]'}`}>
+              <div key={pillar.number} className="pillar-card">
+                <div className="pillar-number">{pillar.number}</div>
+                <div className="h-10 w-10 mb-3 rounded-xl border flex items-center justify-center border-[#bdbdf7] bg-[#f4f4ff] text-[#4f46e5]">
                   <Icon name={pillar.icon} className="h-5 w-5" />
                 </div>
-                <div className={`font-serif text-xl mb-2 ${textPrimary}`}>{pillar.title}</div>
-                <p className={`text-sm ${textSecondary}`}>{pillar.desc}</p>
+                <div className="font-serif text-xl mb-2 text-[#1e293b]">{pillar.title}</div>
+                <p className="text-sm text-[#475569]">{pillar.desc}</p>
               </div>
             ))}
           </div>
@@ -437,10 +438,10 @@ export default function HomePage() {
       </section>
 
       {/* FRAMEWORK */}
-      <section id="framework" className="relative z-10 py-24 bg-transparent">
+      <section id="framework" className="relative z-10 section-bg-white">
         <div className="mx-auto max-w-5xl px-6">
-          <div className={`font-bold uppercase tracking-widest text-xs mb-2 ${accentText}`}>How It Works</div>
-          <h2 className={`font-serif text-3xl md:text-5xl mb-8 ${textPrimary}`}>Guided by Insight,<br />Driven by Discipline</h2>
+          <div className="font-bold uppercase tracking-widest text-xs mb-2 pending-label">How It Works</div>
+          <h2 className="section-title">Guided by Insight,<br />Driven by Discipline</h2>
           <div className="grid md:grid-cols-2 gap-10">
             <div className="space-y-2">
               {frameworkSteps.map((step, idx) => (
@@ -470,12 +471,12 @@ export default function HomePage() {
                     { label: 'Macro', val: 55 },
                     { label: 'Alt Data', val: 91 },
                   ].map((row) => (
-                    <div key={row.label} className="flex items-center gap-3">
-                      <div className={`w-28 text-sm ${textSecondary}`}>{row.label}</div>
-                      <div className={`flex-1 h-2 rounded-full overflow-hidden ${isDark ? 'bg-white/10' : 'bg-[#e8e8f8]'}`}>
-                        <div className="h-2 bg-[#4f46e5]" style={{ width: `${row.val}%` }} />
+                    <div key={row.label} className="signal-item">
+                      <div className="signal-name">{row.label}</div>
+                      <div className="signal-bar-container">
+                        <div className="signal-bar-fill" style={{ width: `${row.val}%` }} />
                       </div>
-                      <div className={`w-10 text-right text-xs font-mono ${accentText}`}>{row.val}</div>
+                      <div className="signal-value">{row.val}</div>
                     </div>
                   ))}
                   <div className={`mt-4 rounded-lg border p-4 text-sm ${isDark ? 'border-white/20 bg-white/10 text-[#c4c4e8]' : 'border-[#bdbdf7] bg-[#f4f4ff] text-[#4a4a72]'}`}>
@@ -567,15 +568,15 @@ export default function HomePage() {
       </section>
 
       {/* APPROACH */}
-      <section id="approach" className="relative z-10 py-24 bg-transparent">
+      <section id="approach" className="relative z-10 section-bg-light">
         <div className="mx-auto max-w-5xl px-6">
-          <div className={`font-bold uppercase tracking-widest text-xs ${accentText}`}>Methodology</div>
-          <h2 className={`font-serif text-3xl md:text-5xl mt-2 ${textPrimary}`}>Guided by Insight,<br />Built on Science</h2>
+          <div className="font-bold uppercase tracking-widest text-xs pending-label mb-2">Methodology</div>
+          <h2 className="section-title">Guided by Insight,<br />Built on Science</h2>
           <p className={`mt-2 max-w-xl ${textSecondary}`}>A multi-disciplinary framework that bridges human intuition and machine intelligence.</p>
           <div className="grid md:grid-cols-2 gap-6 mt-10">
             {approachCards.map((card) => (
-              <div key={card.title} className={`rounded-2xl p-6 flex gap-4 border ${cardClass}`}>
-                <div className={`h-10 w-10 rounded-xl border flex items-center justify-center ${isDark ? 'border-white/20 bg-white/10 text-[#a5b4fc]' : 'border-[#bdbdf7] bg-[#f4f4ff] text-[#4f46e5]'}`}>
+              <div key={card.title} className="card-uniform flex gap-4">
+                <div className={`h-10 w-10 shrink-0 rounded-xl border flex items-center justify-center ${isDark ? 'border-white/20 bg-white/10 text-[#a5b4fc]' : 'border-[#bdbdf7] bg-[#f4f4ff] text-[#4f46e5]'}`}>
                   <Icon name={card.icon} className="h-5 w-5" />
                 </div>
                 <div>
