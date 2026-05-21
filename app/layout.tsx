@@ -19,28 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.qsentia.com'),
-  title: {
-    default: 'Qsentia | Investor Intelligence Platform',
-    template: '%s | Qsentia',
-  },
+  title: 'Qsentia',
   description:
-    'Institutional-grade reinforcement learning, market intelligence, and live portfolio research.',
-  applicationName: 'Qsentia',
-  themeColor: '#070815',
-  openGraph: {
-    title: 'Qsentia | Investor Intelligence Platform',
-    description:
-      'Institutional-grade reinforcement learning, market intelligence, and live portfolio research.',
-    url: 'https://www.qsentia.com',
-    siteName: 'Qsentia',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Qsentia | Investor Intelligence Platform',
-    description:
-      'Institutional-grade reinforcement learning, market intelligence, and live portfolio research.',
+    'Institutional-grade reinforcement learning, market intelligence, and live portfolio analytics platform.',
 };
 
 export default function RootLayout({
