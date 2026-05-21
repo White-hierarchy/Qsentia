@@ -305,7 +305,7 @@ export default function DashboardPage() {
     'Selected Strategy';
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#fbfbfb] text-black">
+    <main className="relative min-h-screen overflow-hidden bg-[#070815] text-[#edf0fb]">
       <QSentiaMotionBackground />
       
       <FundDetailModal fund={selectedFundDetail} onClose={() => setSelectedFundDetail(null)} />
@@ -1818,9 +1818,9 @@ function CornerMarks() {
 
 function LoadingScreen({ text }: { text: string }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#fbfbfb] text-black">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070815] text-[#edf0fb]">
       <QSentiaMotionBackground />
-      <div className="relative z-10 rounded-[40px] border border-[#4b3fd1]/20 bg-white/82 p-10 text-center shadow-[0_36px_130px_rgba(25,20,90,0.14)] backdrop-blur-2xl">
+      <div className="relative z-10 rounded-[40px] border border-white/10 bg-white/6 p-10 text-center shadow-[0_36px_130px_rgba(5,7,18,0.45)] backdrop-blur-2xl">
         <div className="mx-auto mb-6 flex justify-center">
           <Image
             src="/logo/qsentia-primary.png"

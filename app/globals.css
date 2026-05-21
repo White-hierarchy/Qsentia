@@ -1,33 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbfbfb;
-  --foreground: #1a1a2e;
-  --accent: #4f46e5;
-  --accent-light: #6b5ce7;
-  --accent-cyan: #00d9ff;
-  --dark-bg: #0f1419;
-  --card-bg: rgba(75, 63, 209, 0.08);
-  --border-color: rgba(75, 63, 209, 0.2);
-  
-  --bg: #eeeef6;
-  --grid: rgba(100, 100, 200, 0.085);
-  --sur: rgba(255, 255, 255, 0.88);
-  --sur2: rgba(255, 255, 255, 0.55);
-  --bdr: rgba(110, 110, 200, 0.13);
-  --bdr2: rgba(110, 110, 200, 0.2);
-  --t1: #1a1a2e;
-  --t2: #4a4a72;
-  --t3: #9090b8;
-  --ac: #4f46e5;
-  --acb: rgba(79, 70, 229, 0.09);
-  --gr: #16a34a;
-  --grb: #dcfce7;
-  --rd: #dc2626;
-  --rdb: #fee2e2;
-  --am: #d97706;
-  --amb: #fef3c7;
-  --pu: #7c3aed;
+  --background: #070815;
+  --foreground: #edf0fb;
+  --accent: #8d82ff;
+  --accent-light: #b5adff;
+  --accent-cyan: #7de3ff;
+  --dark-bg: #070815;
+  --card-bg: rgba(15, 17, 36, 0.72);
+  --border-color: rgba(163, 155, 255, 0.16);
+
+  --bg: #070815;
+  --grid: rgba(154, 145, 255, 0.08);
+  --sur: rgba(15, 17, 36, 0.7);
+  --sur2: rgba(18, 20, 41, 0.55);
+  --bdr: rgba(163, 155, 255, 0.14);
+  --bdr2: rgba(163, 155, 255, 0.22);
+  --t1: #edf0fb;
+  --t2: #b9bed6;
+  --t3: #8b91ad;
+  --ac: #8d82ff;
+  --acb: rgba(141, 130, 255, 0.12);
+  --gr: #3ddc97;
+  --grb: rgba(61, 220, 151, 0.12);
+  --rd: #ff6b7a;
+  --rdb: rgba(255, 107, 122, 0.12);
+  --am: #ffbf5e;
+  --amb: rgba(255, 191, 94, 0.12);
+  --pu: #b79cff;
 }
 
 @theme inline {
@@ -40,13 +40,30 @@
 
 body {
   background-color: var(--bg);
-  background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+  background-image:
+    radial-gradient(circle at top, rgba(141, 130, 255, 0.18), transparent 36%),
+    radial-gradient(circle at 80% 18%, rgba(125, 227, 255, 0.12), transparent 28%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-size: auto, auto, 36px 36px, 36px 36px;
+  background-attachment: fixed;
   color: var(--t1);
   font-family: var(--font-dm-sans), sans-serif;
   letter-spacing: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
+  color-scheme: dark;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(141, 130, 255, 0.32);
+  color: #fff;
 }
 
 /* Enhanced Animations */
@@ -257,6 +274,21 @@ body {
 
 .recharts-tooltip-wrapper {
   outline: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .chart-animate .chart-line,
+  .chart-animate .chart-area,
+  .chart-animate .chart-dot {
+    animation: none !important;
+  }
 }
 
 /* Cyan glow animation */

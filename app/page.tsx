@@ -217,7 +217,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
 
 export default function HomePage() {
   const [activeStep, setActiveStep] = useState(0);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data } = useSWR('/api/dashboard', fetcher, { refreshInterval: 60000 });
   const statsRef = useRef<HTMLDivElement | null>(null);
