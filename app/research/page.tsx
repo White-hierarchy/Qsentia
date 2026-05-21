@@ -196,7 +196,7 @@ export default function ResearchPage() {
               width={220}
               height={72}
               priority
-              className="h-9 w-auto opacity-95"
+              className="h-10 w-auto opacity-95 sm:h-11"
             />
             <span className="hidden h-6 w-px bg-white/12 md:block" />
             <span className="hidden text-[11px] font-semibold uppercase tracking-[0.34em] text-[#8b91ad] md:block">
@@ -505,7 +505,7 @@ export default function ResearchPage() {
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[1.3fr_0.7fr_0.7fr]">
           <div>
             <div className="flex items-center gap-3">
-              <QSentiaLogo theme="dark" alt="Qsentia" width={220} height={72} className="h-9 w-auto opacity-95" />
+              <QSentiaLogo theme="dark" alt="Qsentia" width={220} height={72} className="h-10 w-auto opacity-95 sm:h-11" />
               <span className="text-xs font-semibold uppercase tracking-[0.34em] text-[#8b91ad]">Qsentia</span>
             </div>
             <p className="mt-4 max-w-xl text-sm leading-7 text-[#8b91ad]">

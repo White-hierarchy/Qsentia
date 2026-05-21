@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { DM_Sans, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeProvider from '@/components/ThemeProvider';
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -32,10 +33,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${dmSans.variable} ${dmSerif.variable} ${jetbrainsMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full bg-[#070815] font-sans antialiased text-[#edf0fb] flex flex-col">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -2,25 +2,27 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 type LogoTheme = 'dark' | 'light' | 'system';
 
-const DARK_LOGO = '/logo/Qsentia%20Logo%20Bg%20transparent.png';
-const LIGHT_LOGO = '/logo/Qsentia%20Logo%20Bg%20transparent%201.png';
+const DARK_LOGO = '/logo/dark.png';
+const LIGHT_LOGO = '/logo/light.png';
 
 function useResolvedTheme(theme: LogoTheme) {
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [systemTheme, setSystemTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    if (theme !== 'system') {
-      setResolvedTheme(theme);
-      return;
-    }
+    setMounted(true);
+
+    if (theme !== 'system') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const applyTheme = () => {
-      setResolvedTheme(mediaQuery.matches ? 'dark' : 'light');
+      setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
     };
 
     applyTheme();
@@ -34,7 +36,11 @@ function useResolvedTheme(theme: LogoTheme) {
     return () => mediaQuery.removeListener(applyTheme);
   }, [theme]);
 
-  return resolvedTheme;
+  if (theme !== 'system') return theme;
+
+  if (!mounted) return 'dark';
+
+  return resolvedTheme === 'light' ? 'light' : systemTheme;
 }
 
 export function QSentiaLogo({
@@ -56,6 +62,11 @@ export function QSentiaLogo({
 }) {
   const resolvedTheme = useResolvedTheme(theme);
   const src = resolvedTheme === 'light' ? LIGHT_LOGO : DARK_LOGO;
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
 
   return (
     <Image
@@ -65,7 +76,8 @@ export function QSentiaLogo({
       height={height}
       priority={priority}
       sizes={sizes}
-      className={className}
+      onLoadingComplete={() => setLoaded(true)}
+      className={`${className} transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
     />
   );
 }

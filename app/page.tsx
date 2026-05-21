@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
 import QSentiaLogo from '@/components/QSentiaLogo';
 import { fmtNum, fmtPct } from '@/lib/metrics';
@@ -218,8 +219,8 @@ function Icon({ name, className }: { name: string; className?: string }) {
 
 export default function HomePage() {
   const [activeStep, setActiveStep] = useState(0);
-  const [isDark, setIsDark] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
   const { data } = useSWR('/api/dashboard', fetcher, { refreshInterval: 60000 });
   const statsRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
@@ -231,6 +232,8 @@ export default function HomePage() {
   const performanceReveal = useReveal(0.2);
   const approachReveal = useReveal(0.2);
   const ctaReveal = useReveal(0.2);
+
+  const isDark = resolvedTheme !== 'light';
 
   const textPrimary = isDark ? 'text-white' : 'text-[#1a1a2e]';
   const textSecondary = isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]';
@@ -331,7 +334,7 @@ export default function HomePage() {
               alt="Qsentia"
               width={220}
               height={72}
-              className="h-8 w-auto sm:h-10"
+              className="h-9 w-auto sm:h-11 md:h-12"
               priority
             />
           </div>
@@ -342,7 +345,7 @@ export default function HomePage() {
             <a href="#approach" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Approach</a>
             <button
               type="button"
-              onClick={() => setIsDark((prev) => !prev)}
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
               className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}
             >
               {isDark ? 'Light' : 'Dark'}
@@ -367,7 +370,7 @@ export default function HomePage() {
               <a href="#approach" className={isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]'}>Approach</a>
               <button
                 type="button"
-                onClick={() => setIsDark((prev) => !prev)}
+                onClick={() => setTheme(isDark ? 'light' : 'dark')}
                 className={`rounded-md border px-3 py-2 text-left ${isDark ? 'border-white/20 text-white' : 'border-[#4f46e5] text-[#4f46e5]'}`}
               >
                 {isDark ? 'Light theme' : 'Dark theme'}
