@@ -5,6 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
+import QSentiaLogo from '@/components/QSentiaLogo';
 import { fmtNum, fmtPct } from '@/lib/metrics';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -189,11 +190,11 @@ export default function ResearchPage() {
       <nav className="sticky top-0 z-50 border-b border-white/8 bg-[#070815]/72 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div className="flex items-center gap-4">
-            <Image
-              src="/logo/qsentia-primary.png"
+            <QSentiaLogo
+              theme="dark"
               alt="Qsentia"
-              width={160}
-              height={48}
+              width={220}
+              height={72}
               priority
               className="h-9 w-auto opacity-95"
             />
@@ -504,7 +505,7 @@ export default function ResearchPage() {
         <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[1.3fr_0.7fr_0.7fr]">
           <div>
             <div className="flex items-center gap-3">
-              <Image src="/logo/qsentia-primary.png" alt="Qsentia" width={160} height={48} className="h-9 w-auto opacity-95" />
+              <QSentiaLogo theme="dark" alt="Qsentia" width={220} height={72} className="h-9 w-auto opacity-95" />
               <span className="text-xs font-semibold uppercase tracking-[0.34em] text-[#8b91ad]">Qsentia</span>
             </div>
             <p className="mt-4 max-w-xl text-sm leading-7 text-[#8b91ad]">

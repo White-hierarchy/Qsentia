@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
+import QSentiaLogo from '@/components/QSentiaLogo';
 import {
   Area,
   AreaChart,
@@ -477,13 +478,7 @@ export default function DashboardPage() {
           <div className="grid gap-8 mb-8 md:grid-cols-3">
             <div>
               <div className="mb-3">
-                <Image
-                  src="/logo/qsentia-primary.png"
-                  alt="QSentia Logo"
-                  width={320}
-                  height={100}
-                  className="h-auto w-auto max-h-[130px] max-w-[320px] object-contain"
-                />
+                <QLogo />
               </div>
               <p className="text-xs leading-5 text-neutral-500 max-w-xs">
                 Institutional research terminal for adaptive allocation, benchmark discipline, and execution transparency.
@@ -519,13 +514,7 @@ function TopNav() {
   return (
     <header className="mb-12 flex items-center justify-between rounded-[24px] border border-black/8 bg-white/70 px-8 py-5 shadow-[0_12px_40px_rgba(25,20,90,0.06)] backdrop-blur-md transition-all duration-300">
       <Link href="/" className="flex items-center gap-2 group">
-        <Image
-          src="/logo/qsentia-primary.png"
-          alt="QSentia Logo"
-          width={320}
-          height={105}
-          className="h-auto w-auto max-h-[120px] max-w-[320px] object-contain transition-transform duration-300 group-hover:scale-105"
-        />
+        <QLogo />
       </Link>
 
       <div className="hidden items-center gap-8 text-xs font-bold uppercase tracking-[0.18em] text-neutral-600 md:flex">
@@ -1795,9 +1784,9 @@ function Pill({ children }: { children: React.ReactNode }) {
 
 function QLogo() {
   return (
-    <Image
-      src="/logo/qsentia-primary.png"
-      alt="QSentia Logo"
+    <QSentiaLogo
+      theme="dark"
+      alt="Qsentia"
       width={480}
       height={160}
       className="h-auto w-auto max-h-[180px] max-w-[480px] object-contain"
@@ -1822,13 +1811,7 @@ function LoadingScreen({ text }: { text: string }) {
       <QSentiaMotionBackground />
       <div className="relative z-10 rounded-[40px] border border-white/10 bg-white/6 p-10 text-center shadow-[0_36px_130px_rgba(5,7,18,0.45)] backdrop-blur-2xl">
         <div className="mx-auto mb-6 flex justify-center">
-          <Image
-            src="/logo/qsentia-primary.png"
-            alt="QSentia Logo"
-            width={480}
-            height={160}
-            className="h-auto w-auto max-h-[180px] max-w-[480px] object-contain"
-          />
+          <QLogo />
         </div>
         <div className="text-sm font-black uppercase tracking-[0.22em] text-[#4b3fd1]">{text}</div>
       </div>

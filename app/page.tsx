@@ -5,6 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
+import QSentiaLogo from '@/components/QSentiaLogo';
 import { fmtNum, fmtPct } from '@/lib/metrics';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
@@ -325,11 +326,11 @@ export default function HomePage() {
       <nav className={`fixed top-0 left-0 right-0 z-50 border-b ${isDark ? 'border-white/10 bg-[#11102a]/70' : 'border-[#e0e0f7] bg-white/70'} backdrop-blur-xl`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
           <div className="flex items-center">
-            <Image
-              src="/logo/qsentia-primary.png"
-              alt="QSentia Logo"
-              width={200}
-              height={60}
+            <QSentiaLogo
+              theme={isDark ? 'dark' : 'light'}
+              alt="Qsentia"
+              width={220}
+              height={72}
               className="h-8 w-auto sm:h-10"
               priority
             />
@@ -747,11 +748,11 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-8 border-b border-white/10 pb-8">
             <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
-                <Image
-                  src="/logo/qsentia-primary.png"
-                  alt="QSentia Logo"
-                  width={200}
-                  height={60}
+                <QSentiaLogo
+                  theme={isDark ? 'dark' : 'light'}
+                  alt="Qsentia"
+                  width={220}
+                  height={72}
                   className="h-12 w-auto"
                 />
                 <span className="text-sm font-semibold tracking-widest text-white">Qsentia</span>
