@@ -478,7 +478,7 @@ export default function DashboardPage() {
             <div>
               <div className="mb-3">
                 <Image
-                  src="/logo/Qsentia Logo Bg transparent.png"
+                  src="/logo/qsentia-primary.png"
                   alt="QSentia Logo"
                   width={320}
                   height={100}
@@ -520,7 +520,7 @@ function TopNav() {
     <header className="mb-12 flex items-center justify-between rounded-[24px] border border-black/8 bg-white/70 px-8 py-5 shadow-[0_12px_40px_rgba(25,20,90,0.06)] backdrop-blur-md transition-all duration-300">
       <Link href="/" className="flex items-center gap-2 group">
         <Image
-          src="/logo/Qsentia Logo Bg transparent.png"
+          src="/logo/qsentia-primary.png"
           alt="QSentia Logo"
           width={320}
           height={105}
@@ -1796,7 +1796,7 @@ function Pill({ children }: { children: React.ReactNode }) {
 function QLogo() {
   return (
     <Image
-      src="/logo/Qsentia Logo Bg transparent.png"
+      src="/logo/qsentia-primary.png"
       alt="QSentia Logo"
       width={480}
       height={160}
@@ -1823,7 +1823,7 @@ function LoadingScreen({ text }: { text: string }) {
       <div className="relative z-10 rounded-[40px] border border-[#4b3fd1]/20 bg-white/82 p-10 text-center shadow-[0_36px_130px_rgba(25,20,90,0.14)] backdrop-blur-2xl">
         <div className="mx-auto mb-6 flex justify-center">
           <Image
-            src="/logo/Qsentia Logo Bg transparent.png"
+            src="/logo/qsentia-primary.png"
             alt="QSentia Logo"
             width={480}
             height={160}

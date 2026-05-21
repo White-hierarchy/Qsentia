@@ -8,7 +8,10 @@ const REGISTRY_OWNER = process.env.NEXT_PUBLIC_QSENTIA_REPO_OWNER || 'FinTechEnt
 const REGISTRY_REPO = process.env.NEXT_PUBLIC_QSENTIA_REPO_NAME || 'Base_Model_BR_PPO';
 const REGISTRY_BRANCH = process.env.NEXT_PUBLIC_QSENTIA_BRANCH || 'main';
 const DEFAULT_MODEL_ID = process.env.NEXT_PUBLIC_QSENTIA_DEFAULT_MODEL_ID || 'real_crypto_carry_ibkr';
-const ACCOUNT_BASELINE_MODEL_IDS = new Set(['real_crypto_carry_ibkr']);
+const ACCOUNT_BASELINE_MODEL_IDS = new Set([
+  'real_crypto_carry_ibkr',
+  'delta_neutral_crypto_funding',
+]);
 const DEFAULT_ACCOUNT_STARTING_CAPITAL = Number(
   process.env.QSENTIA_ACCOUNT_STARTING_CAPITAL ||
     process.env.NEXT_PUBLIC_QSENTIA_ACCOUNT_STARTING_CAPITAL ||
@@ -41,6 +44,8 @@ type PortfolioPoint = {
   value: number;
   raw: CsvRow;
 };
+
+type AccountHealthStatus = Record<string, unknown> | null;
 
 type DailyPoint = {
   timestamp: string;
@@ -312,6 +317,39 @@ function accountValueObservations(groups: CsvRow[][]): PortfolioPoint[] {
   return groups.flatMap((rows) => normalizePortfolioRows(rows));
 }
 
+function objectToCsvRow(raw: Record<string, unknown>): CsvRow {
+  return Object.fromEntries(
+    Object.entries(raw).map(([key, value]) => [key, value === null || value === undefined ? '' : String(value)])
+  );
+}
+
+function healthStatusObservation(healthStatus: AccountHealthStatus): PortfolioPoint[] {
+  if (!healthStatus) return [];
+
+  const value = accountValue(objectToCsvRow(healthStatus));
+  const timestamp = String(
+    healthStatus.updated_at_utc ||
+      healthStatus.timestamp_utc ||
+      healthStatus.timestamp ||
+      healthStatus.date ||
+      ''
+  );
+
+  if (!timestamp || value === null) return [];
+
+  return [
+    {
+      timestamp,
+      value,
+      raw: objectToCsvRow({
+        ...healthStatus,
+        account_status: healthStatus.account_status || healthStatus.overall_status || 'connected',
+        source: healthStatus.source || 'health_status_net_liquidation',
+      }),
+    },
+  ];
+}
+
 function submittedOrderCount(rows: CsvRow[]) {
   return rows.filter((row) => String(row.submitted).toLowerCase() === 'true').length;
 }
@@ -519,12 +557,15 @@ export async function GET(request: Request) {
   ]);
 
   const paperStatus = inferPaperStatus(positionsRows, submittedOrdersRows);
-  const portfolio = accountValueObservations([
-    portfolioRows,
-    latestDecisionRows,
-    decisionsRows,
-    signalHistoryRows,
-  ]);
+  const portfolio = [
+    ...accountValueObservations([
+      portfolioRows,
+      latestDecisionRows,
+      decisionsRows,
+      signalHistoryRows,
+    ]),
+    ...healthStatusObservation(healthStatus),
+  ];
   const dailyPortfolio = toDailyPortfolio(portfolio);
   const values = dailyPortfolio.map((p) => p.value);
   const accountBaseline = startingCapitalForModel(selectedModelConfig);
@@ -548,7 +589,14 @@ export async function GET(request: Request) {
 
   for (const model of registry) {
     const rows = await fetchCsvFromModel(model, 'portfolio/portfolio.csv');
-    const daily = toDailyPortfolio(normalizePortfolioRows(rows));
+    const modelHealthStatus = await fetchJsonFromModel<Record<string, unknown>>(
+      model,
+      'health/health_status.json'
+    );
+    const daily = toDailyPortfolio([
+      ...normalizePortfolioRows(rows),
+      ...healthStatusObservation(modelHealthStatus),
+    ]);
     const modelValues = daily.map((p) => p.value);
     const modelBaseline = startingCapitalForModel(model);
     const modelPerformanceValues = performanceValues(modelValues, modelBaseline);
@@ -596,8 +644,12 @@ export async function GET(request: Request) {
     latest: {
         decision: latest(latestDecisionRows),
       
-        // SOURCE OF TRUTH: portfolio/portfolio.csv
+        // SOURCE OF TRUTH: latest IBKR NetLiquidation observation from portfolio logs or health status.
         portfolioValue: values.length ? values[values.length - 1] : null,
+        portfolioValueTimestamp: dailyPortfolio.length ? dailyPortfolio[dailyPortfolio.length - 1].timestamp : null,
+        portfolioValueSource: dailyPortfolio.length
+          ? dailyPortfolio[dailyPortfolio.length - 1].raw?.source || 'ibkr_net_liquidation'
+          : null,
         firstPortfolioValue: values.length ? accountBaseline ?? values[0] : null,
         startingCapital: accountBaseline,
         portfolioPnl:
@@ -654,9 +706,10 @@ export async function GET(request: Request) {
         paperStatus
       })),
       selectedModelConfig,
-      rowCounts: {
-        portfolioRows: portfolioRows.length,
-        dailyPortfolioRows: dailyPortfolio.length,
+        rowCounts: {
+          portfolioRows: portfolioRows.length,
+          healthStatusRows: healthStatus ? 1 : 0,
+          dailyPortfolioRows: dailyPortfolio.length,
         latestDecisionRows: latestDecisionRows.length,
         decisionsRows: decisionsRows.length,
         targetWeightsRows: targetWeightsRows.length,
