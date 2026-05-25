@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "Qsentia - Investor Intelligence Platform",
@@ -16,7 +17,10 @@ export default function RootLayout({
       lang="en"
       className="h-full antialiased"
     >
-      <body className="min-h-full font-sans antialiased bg-[#eeeef6] flex flex-col">{children}</body>
+      <body className="min-h-full font-sans antialiased bg-[#eeeef6] flex flex-col overflow-x-hidden">
+        <SiteHeader />
+        {children}
+      </body>
     </html>
   );
 }
