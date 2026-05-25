@@ -1,28 +1,9 @@
-import type { Metadata } from 'next';
-import { DM_Sans, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
+import type { Metadata } from "next";
 import "./globals.css";
-import ThemeProvider from '@/components/ThemeProvider';
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-});
-
-const dmSerif = DM_Serif_Display({
-  variable: "--font-dm-serif",
-  weight: "400",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
-  title: 'Qsentia',
-  description:
-    'Institutional-grade reinforcement learning, market intelligence, and live portfolio analytics platform.',
+  title: "Qsentia - Investor Intelligence Platform",
+  description: "Advanced research and analytics platform for investor insights",
 };
 
 export default function RootLayout({
@@ -33,12 +14,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className={`${dmSans.variable} ${dmSerif.variable} ${jetbrainsMono.variable} h-full scroll-smooth antialiased`}
+      className="h-full antialiased"
     >
-      <body className="min-h-full bg-[#070815] font-sans antialiased text-[#edf0fb] flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      <body className="min-h-full font-sans antialiased bg-[#eeeef6] flex flex-col">{children}</body>
     </html>
   );
 }

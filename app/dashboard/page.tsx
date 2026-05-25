@@ -4,8 +4,6 @@ import useSWR from 'swr';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import QSentiaMotionBackground from '@/components/QSentiaMotionBackground';
-import QSentiaLogo from '@/components/QSentiaLogo';
 import {
   Area,
   AreaChart,
@@ -24,7 +22,27 @@ import {
 import { computeStats, fmtDollar, fmtNum, fmtPct } from '@/lib/metrics';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-const DEFAULT_ACCOUNT_MODEL_ID = 'real_crypto_carry_ibkr';
+const DEFAULT_ACCOUNT_MODEL_ID =
+  process.env.NEXT_PUBLIC_QSENTIA_DEFAULT_MODEL_ID || 'qsentia_brppo_macro_rotation_alpaca';
+
+type FundSummaryRow = {
+  id: string;
+  name: string;
+  color: string;
+  latestValue: number | null;
+  dayReturn?: number | null;
+  totalReturn?: number | null;
+  inceptionDate?: string;
+  observations?: number;
+  sparkline?: number[];
+};
+
+type FundGridRow = FundSummaryRow & {
+  totalReturn: number | null;
+  dayReturn: number | null;
+  observations: number;
+  sparkline: number[];
+};
 
 function getHighestSharpeModelId(modelComparison: any[]) {
   const candidates = (modelComparison || [])
@@ -70,6 +88,19 @@ function sortPoints(points: any[]) {
   return [...(points || [])]
     .filter((p: any) => p?.timestamp && Number.isFinite(Number(p?.value)))
     .sort((a: any, b: any) => String(a.timestamp).localeCompare(String(b.timestamp)));
+}
+
+function sparklineBars(points: any[], count = 10) {
+  const clean = sortPoints(points).slice(-count);
+  const values = clean.map((p: any) => Number(p.value)).filter((v: number) => Number.isFinite(v));
+
+  if (!values.length) return [];
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+
+  return values.map((value) => (value - min) / span);
 }
 
 function ytdFundReturnRows(modelComparison: any[]) {
@@ -255,7 +286,7 @@ function commonWindowLeaderboardRows(data: any) {
 
 export default function DashboardPage() {
   const [model, setModel] = useState<string | null>(null);
-  const [selectedFundDetail, setSelectedFundDetail] = useState<any>(null);
+  const [selectedFundDetail, setSelectedFundDetail] = useState<FundSummaryRow | null>(null);
 
   const { data, error, isLoading } = useSWR(
     `/api/dashboard${model ? `?model=${model}` : ''}`,
@@ -285,6 +316,36 @@ export default function DashboardPage() {
     }
   }, [bestSharpeModelId, data?.registry, data?.selectedModel, model]);
 
+  const fundGridRows = useMemo<FundGridRow[]>(() => {
+    return (data?.modelComparison || [])
+      .map((model: any) => {
+        const totalReturn = Number(model?.stats?.totalReturn);
+        const points = sortPoints(model?.points || []);
+        const latestPoint = points[points.length - 1];
+        const previousPoint = points[points.length - 2];
+        const latestIndex = Number(latestPoint?.value);
+        const previousIndex = Number(previousPoint?.value);
+        const dayReturn =
+          Number.isFinite(latestIndex) && Number.isFinite(previousIndex) && previousIndex !== 0
+            ? latestIndex / previousIndex - 1
+            : null;
+        const pointCount = Number(model?.stats?.nObservations ?? model?.points?.length ?? 0);
+
+        return {
+          id: String(model.id || model.name || 'model'),
+          name: String(model.name || model.id || 'Model'),
+          color: model.color || '#3b35d4',
+          totalReturn: Number.isFinite(totalReturn) ? totalReturn : null,
+          dayReturn,
+          inceptionDate: model?.inceptionDate || model?.points?.[0]?.timestamp,
+          observations: pointCount,
+          latestValue: Number.isFinite(Number(model?.latestValue)) ? Number(model.latestValue) : null,
+          sparkline: sparklineBars(points),
+        };
+      })
+      .slice(0, 6);
+  }, [data?.modelComparison]);
+
   if (isLoading) return <LoadingScreen text="Loading live QSentia research terminal..." />;
   if (error) return <LoadingScreen text="Unable to load GitHub trading logs." />;
 
@@ -306,104 +367,120 @@ export default function DashboardPage() {
     'Selected Strategy';
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#070815] text-[#edf0fb]">
-      <QSentiaMotionBackground />
-      
+    <main className="min-h-screen bg-[#f4f4f6] text-[#0d0d14]">
       <FundDetailModal fund={selectedFundDetail} onClose={() => setSelectedFundDetail(null)} />
 
-      <div className="relative z-10 mx-auto max-w-[1620px] px-6 py-12">
-          <TopNav />
-        
-          <DailyFundReturnBanner
-            data={data}
-            selectedModelId={data?.selectedModel}
-            onSelectModel={setModel}
-            onFundSelect={setSelectedFundDetail}
-          />
+      <div className="mx-auto max-w-[1400px] px-7 pb-20">
+        <TopNav
+          paperStatus={data?.latest?.paperStatus || data?.latest?.paperReplayStatus || 'Pending'}
+          refreshSeconds={120}
+        />
 
-          <YtdFundReturnBanner
-              data={data}
-              selectedModelId={data?.selectedModel}
-              onSelectModel={setModel}
-              onFundSelect={setSelectedFundDetail}
-            />
-        
-          <section className="mb-12 grid gap-8 lg:grid-cols-[0.92fr_1.08fr]">
-          <div className="relative overflow-hidden rounded-[32px] border border-[#4b3fd1]/15 bg-white/72 p-8 shadow-[0_20px_80px_rgba(75,63,209,0.08)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_30px_100px_rgba(75,63,209,0.12)]">  
-            <CornerMarks />
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#4b3fd1]/10 blur-3xl" />
-            <div className="absolute -bottom-24 left-16 h-64 w-64 rounded-full bg-black/5 blur-3xl" />
+        <DailyFundReturnBanner
+          data={data}
+          selectedModelId={data?.selectedModel}
+          onSelectModel={setModel}
+          onFundSelect={setSelectedFundDetail}
+        />
 
-            <div className="relative mb-6 flex flex-col items-center justify-center gap-2">
-              <QLogo />
-              <div className="text-xs font-black uppercase tracking-[0.20em] text-[#4b3fd1]">
-                Live Terminal
+        <YtdFundReturnBanner
+          data={data}
+          selectedModelId={data?.selectedModel}
+          onSelectModel={setModel}
+          onFundSelect={setSelectedFundDetail}
+        />
+
+        <section className="mt-6 grid gap-5 rounded-[16px] border border-black/10 bg-white" style={{ gridTemplateColumns: '300px minmax(0,1fr)' }}>
+          <div className="border-r border-black/10 px-7 py-8">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-black font-mono text-sm">
+                Q
               </div>
+              <div className="font-mono text-sm tracking-[0.4em]">SENTIA</div>
             </div>
-
-            <div className="relative mb-3 text-xs font-black uppercase tracking-[0.24em] text-[#4b3fd1]/70">
-              Institutional Research Program
-            </div>
-
-            <h1 className="relative max-w-2xl text-5xl font-light leading-[1.1] tracking-[-0.08em] text-black max-xl:text-4xl max-md:text-3xl">
-              More Alpha<br />Less Risk<br />Live.
+            <div className="font-mono text-[10px] tracking-[0.18em] text-[#5f5ae0]">LIVE TERMINAL</div>
+            <div className="mt-1 font-mono text-[10px] tracking-[0.2em] text-[#d0d0de]">INSTITUTIONAL RESEARCH PROGRAM</div>
+            <h1 className="mt-4 text-3xl font-light leading-[1.15] tracking-[-0.04em]">
+              More Alpha
+              <br />
+              Less Risk
+              <br />
+              Live.
             </h1>
-
-            <p className="relative mt-5 max-w-xl text-sm leading-7 text-neutral-600">
+            <p className="mt-4 text-xs leading-6 text-[#6b6b82]">
               BR-PPO paper trading with live portfolio monitoring, risk control, and execution transparency.
             </p>
-
-            <div className="relative mt-6 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               <Pill>GitHub Logs</Pill>
-              <Pill>Alpaca Paper Trading</Pill>
+              <Pill>Paper Trading</Pill>
               <Pill>BR-PPO</Pill>
               <Pill>Auto Refresh 120s</Pill>
               <Pill>{selectedModelName}</Pill>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <MetricTile
-              label="Net Liquidation"
-              value={fmtDollar(latestPortfolioValue)}
-              detail="Latest IBKR/account value observation"
-              large
-            />
+          <div className="grid gap-3 px-6 py-6 sm:grid-cols-2 lg:grid-cols-3">
+            <MetricTile label="Net Liquidation" value={fmtDollar(latestPortfolioValue)} detail="Latest IBKR account value" large />
             <MetricTile label="Total P&L" value={fmtDollar(pnl)} detail="Paper trading basis" large />
-            <MetricTile
-              label="Total Return"
-              value={fmtPct(totalReturn, true)}
-              detail={historyStatus(stats)}
-            />
-            <MetricTile
-              label="Sharpe"
-              value={fmtNum(stats.sharpe)}
-              detail={stats?.status === 'partial' ? 'Pending more return observations' : 'Annualized'}
-            />
+            <MetricTile label="Total Return" value={fmtPct(totalReturn, true)} detail={historyStatus(stats)} />
+            <MetricTile label="Sharpe Ratio" value={fmtNum(stats.sharpe)} detail={stats?.status === 'partial' ? 'More observations needed' : 'Annualized'} />
             <MetricTile label="Max Drawdown" value={fmtPct(stats.maxDrawdown, true)} detail="Peak to trough" />
-            <MetricTile
-              label="Current Signal"
-              value={latestDecision?.action || 'Pending'}
-              detail="Latest model allocation"
-            />
+            <MetricTile label="Current Signal" value={latestDecision?.action || latestDecision?.signal || 'Pending'} detail="Latest model allocation" />
           </div>
         </section>
 
-        <section className="mb-12 rounded-[28px] border border-[#4b3fd1]/25 bg-gradient-to-br from-[#4b3fd1] to-[#372db8] p-8 text-white shadow-[0_30px_100px_rgba(75,63,209,0.25)] transition-all duration-300 hover:shadow-[0_40px_120px_rgba(75,63,209,0.35)]">
-          <div className="text-xs font-black uppercase tracking-[0.20em] text-white/60 mb-4">
-            Research Framework
-          </div>
-          <div className="grid gap-6 lg:grid-cols-[1fr_0.5fr]">
-            <h2 className="text-4xl font-light leading-[1.15] tracking-[-0.06em]">
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {fundGridRows.map((row) => (
+            <button
+              key={row.id}
+              onClick={() => setSelectedFundDetail(row)}
+              className="rounded-[10px] border border-black/10 bg-white px-4 py-4 text-left transition hover:border-black/20"
+            >
+              <div className="mb-3 flex items-start gap-2">
+                <span className="mt-1 h-2 w-2 rounded-full" style={{ backgroundColor: row.color }} />
+                <div className="text-[11px] text-[#343448] leading-5">{row.name}</div>
+              </div>
+              <div
+                className={`text-2xl font-light tracking-[-0.04em] ${
+                  row.totalReturn !== null && row.totalReturn >= 0 ? 'text-[#0b7a50]' : 'text-[#c0321f]'
+                }`}
+              >
+                {fmtPct(row.totalReturn, true)}
+              </div>
+              <div className="mt-2 font-mono text-[10px] text-[#a8a8be]">
+                From {formatInceptionDate(row.inceptionDate)} · {row.observations || 0} obs.
+              </div>
+              <div className="font-mono text-[10px] text-[#6b6b82]">{fmtDollar(row.latestValue)}</div>
+              <div className="mt-3 flex h-5 items-end gap-1">
+                {row.sparkline.map((value, index) => (
+                  <span
+                    key={`${row.id}-spark-${index}`}
+                    className="flex-1 rounded-[2px]"
+                    style={{
+                      height: `${Math.max(3, Math.round(value * 100))}%`,
+                      backgroundColor: row.color,
+                      opacity: 0.25 + index / (row.sparkline.length * 1.6),
+                    }}
+                  />
+                ))}
+              </div>
+            </button>
+          ))}
+        </section>
+
+        <section className="mt-6 rounded-[12px] border border-black/10 bg-white px-6 py-6">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5f5ae0]">Research Framework</div>
+          <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_0.6fr]">
+            <h2 className="text-2xl font-light tracking-[-0.03em]">
               Adaptive allocation with benchmark discipline.
             </h2>
-            <p className="text-sm leading-6 text-white/75">
+            <p className="text-xs leading-6 text-[#6b6b82]">
               Live signal quality, transparent execution, and risk-first portfolio construction.
             </p>
           </div>
         </section>
 
-        <section className="mb-12 grid gap-4 md:grid-cols-4">
+        <section className="mt-4 grid gap-3 md:grid-cols-4">
           <ThesisCard
             number="01"
             title="Adaptive Allocation"
@@ -426,13 +503,13 @@ export default function DashboardPage() {
           />
         </section>
 
-        <section className="mb-12 flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-black/8 bg-white/70 p-5 shadow-[0_12px_40px_rgba(25,20,90,0.06)] backdrop-blur-md transition-all duration-300 hover:shadow-[0_18px_50px_rgba(25,20,90,0.1)]">
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-[12px] border border-black/10 bg-white px-5 py-4">
           <div>
-            <div className="text-xs font-black uppercase tracking-[0.24em] text-neutral-500">
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">
               Strategy Selection
             </div>
             <select
-              className="mt-2 min-w-[360px] rounded-[12px] border border-black/10 bg-white px-4 py-3 text-sm font-bold text-black outline-none transition focus:border-[#4b3fd1] focus:shadow-[0_0_0_3px_rgba(75,63,209,0.1)]"
+              className="mt-2 min-w-[320px] rounded-[6px] border border-black/10 bg-[#eeeff3] px-3 py-2 text-xs text-[#0d0d14] outline-none focus:border-[#3b35d4]"
               value={model || data?.selectedModel || ''}
               onChange={(e) => setModel(e.target.value)}
             >
@@ -474,34 +551,41 @@ export default function DashboardPage() {
           ]}
         />
 
-        <footer className="mt-16 border-t border-black/6 pt-12 pb-8">
+        <footer className="mt-12 border-t border-black/10 pt-10 pb-6">
           <div className="grid gap-8 mb-8 md:grid-cols-3">
             <div>
-              <div className="mb-3">
-                <QLogo />
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center border border-black font-mono text-xs">
+                  Q
+                </div>
+                <span className="font-mono text-[11px] tracking-[0.24em]">SENTIA</span>
               </div>
-              <p className="text-xs leading-5 text-neutral-500 max-w-xs">
+              <p className="text-xs leading-5 text-[#6b6b82] max-w-xs">
                 Institutional research terminal for adaptive allocation, benchmark discipline, and execution transparency.
               </p>
             </div>
             <div>
-              <div className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-600">Resources</div>
-              <ul className="space-y-2 text-xs text-neutral-500">
+              <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a8a8be]">Resources</div>
+              <ul className="space-y-2 text-xs text-[#6b6b82]">
                 <li><a href="/dashboard" className="hover:text-[#4b3fd1] transition">Live Dashboard</a></li>
                 <li><a href="/" className="hover:text-[#4b3fd1] transition">Home</a></li>
                 <li><a href="mailto:Lucas.Zarzeczny@qsentia.com" className="hover:text-[#4b3fd1] transition">Contact</a></li>
               </ul>
             </div>
             <div className="text-right">
-              <div className="mb-3 text-xs font-black uppercase tracking-[0.16em] text-neutral-600">Status</div>
-              <div className="space-y-2 text-xs">
-                <div><span className="text-neutral-500">Paper Trading:</span> <span className="font-bold text-[#4b3fd1]">Live</span></div>
-                <div><span className="text-neutral-500">Last Updated:</span> <span className="font-bold text-black">{data?.updatedAt || '—'}</span></div>
-                <div className="text-[10px] text-neutral-400 mt-3">Auto-refresh every 120s</div>
+              <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#a8a8be]">Status</div>
+              <div className="space-y-2 text-xs text-[#6b6b82]">
+                <div>
+                  Paper Trading: <span className="font-semibold text-[#0b7a50]">Live</span>
+                </div>
+                <div>
+                  Last Updated: <span className="font-semibold text-[#0d0d14]">{data?.updatedAt || '—'}</span>
+                </div>
+                <div className="font-mono text-[10px] text-[#a8a8be]">Auto-refresh every 120s</div>
               </div>
             </div>
           </div>
-          <div className="border-t border-black/6 pt-6 text-xs text-neutral-400 text-center">
+          <div className="border-t border-black/10 pt-6 text-[11px] text-[#a8a8be] text-center">
             Q-Sentia Research Terminal · Live paper trading intelligence · Not investment advice · © 2026
           </div>
         </footer>
@@ -510,30 +594,42 @@ export default function DashboardPage() {
   );
 }
 
-function TopNav() {
+function TopNav({
+  paperStatus,
+  refreshSeconds,
+}: {
+  paperStatus: string;
+  refreshSeconds: number;
+}) {
   return (
-    <header className="mb-12 flex items-center justify-between rounded-[24px] border border-black/8 bg-white/70 px-8 py-5 shadow-[0_12px_40px_rgba(25,20,90,0.06)] backdrop-blur-md transition-all duration-300">
-      <Link href="/" className="flex items-center gap-2 group">
-        <QLogo />
-      </Link>
+    <header className="sticky top-0 z-40 flex h-[56px] items-center justify-between border-b border-black/10 bg-white/90 px-7 backdrop-blur">
+      <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center border border-black font-mono text-[10px]">
+            Q
+          </div>
+          <span className="font-mono text-[11px] tracking-[0.24em] text-black">SENTIA</span>
+        </Link>
+        <span className="h-5 w-px bg-black/20" />
+        <span className="text-[11px] text-[#a8a8be]">Research Terminal</span>
+      </div>
 
-      <div className="hidden items-center gap-8 text-xs font-bold uppercase tracking-[0.18em] text-neutral-600 md:flex">
-        <a href="/dashboard" className="px-4 py-2 rounded-[12px] text-[#4b3fd1] transition hover:bg-[#4b3fd1]/10">
-          Terminal
-        </a>
-
-        <a
-          href="mailto:Lucas.Zarzeczny@qsentia.com?subject=QSentia Investor Information Request"
-          className="border border-[#4b3fd1]/30 bg-[#4b3fd1]/10 px-5 py-2.5 text-[#4b3fd1] rounded-[12px] transition duration-300 hover:bg-[#4b3fd1]/20 hover:border-[#4b3fd1]/50"
-        >
-          Contact
-        </a>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 rounded-full border border-emerald-600/20 bg-emerald-50 px-3 py-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[10px] tracking-[0.12em] text-emerald-700">
+            {paperStatus}
+          </span>
+        </div>
+        <div className="rounded-full border border-black/10 bg-[#eeeff3] px-3 py-1 font-mono text-[10px] text-[#6b6b82]">
+          ↻ {refreshSeconds}s
+        </div>
       </div>
     </header>
   );
 }
 
-function FundDetailModal({ fund, onClose }: { fund: any | null; onClose: () => void }) {
+function FundDetailModal({ fund, onClose }: { fund: FundSummaryRow | null; onClose: () => void }) {
   const [timePeriod, setTimePeriod] = useState('1Y');
 
   if (!fund) return null;
@@ -657,7 +753,6 @@ function ScrollButtons({
     setShowLeft(!atStart);
     setShowRight(!atEnd);
 
-    // Update mask classes
     const scrollContainer = container.closest('.scroll-container') as HTMLElement;
     if (scrollContainer) {
       scrollContainer.classList.remove('at-start', 'at-end', 'at-both');
@@ -688,7 +783,6 @@ function ScrollButtons({
         autoScrollIntervalRef.current = null;
       }
 
-      // Re-check after scroll settles
       setTimeout(checkScroll, 400);
     },
     [scrollContainerRef, checkScroll]
@@ -731,24 +825,18 @@ function ScrollButtons({
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    // Initial check
     checkScroll();
-
-    // Add scroll listener
     container.addEventListener('scroll', checkScroll);
 
-    // Add interaction listeners - stops animation permanently
     const onInteract = () => {
       setHasInteracted(true);
       stopAutoScroll();
     };
 
-    // Stop animation when cursor enters (to allow reading)
     const onMouseEnter = () => {
       stopAutoScroll();
     };
 
-    // Resume animation when cursor leaves (if not interacted)
     const onMouseLeave = () => {
       if (!hasInteracted) {
         startAutoScroll();
@@ -761,7 +849,6 @@ function ScrollButtons({
     container.addEventListener('wheel', onInteract);
     container.addEventListener('click', onInteract);
 
-    // Start auto-scroll hint on mount
     const timer = setTimeout(() => {
       if (!hasInteracted) startAutoScroll();
     }, 500);
@@ -830,25 +917,27 @@ function DailyFundReturnBanner({
     .sort((a: any, b: any) => Number(a.dayReturn) - Number(b.dayReturn))[0];
 
   return (
-    <section className="mb-8 overflow-hidden rounded-[24px] border border-black/8 bg-white/75 shadow-[0_18px_60px_rgba(25,20,90,0.08)] backdrop-blur-md">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/8 px-6 py-4">
+    <section className="mt-4 overflow-hidden rounded-[12px] border border-black/10 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 px-5 py-3">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#4b3fd1]">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5f5ae0]">
             Daily Fund Performance
           </div>
-          <div className="mt-1 text-sm font-medium text-neutral-600">
+          <div className="mt-1 text-xs text-[#6b6b82]">
             Latest one-day gain/loss from committed portfolio logs
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs">
+        <div className="flex flex-wrap gap-2 text-[11px]">
           {best && (
-            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 font-bold text-emerald-700">
+            <div className="flex items-center gap-2 rounded-[6px] border border-emerald-600/20 bg-emerald-50 px-3 py-2 font-mono text-[10px] text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
               Best Today: {best.name} {fmtPct(best.dayReturn, true)}
             </div>
           )}
           {worst && (
-            <div className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 font-bold text-red-700">
+            <div className="flex items-center gap-2 rounded-[6px] border border-red-600/20 bg-red-50 px-3 py-2 font-mono text-[10px] text-red-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-600" />
               Weakest Today: {worst.name} {fmtPct(worst.dayReturn, true)}
             </div>
           )}
@@ -872,35 +961,35 @@ function DailyFundReturnBanner({
                   onSelectModel(row.id);
                   onFundSelect?.(row);
                 }}
-                className={`min-w-[245px] rounded-[18px] border px-4 py-4 text-left transition hover:-translate-y-0.5 ${
+                className={`min-w-[245px] rounded-[10px] border px-4 py-4 text-left transition hover:-translate-y-0.5 ${
                   active
-                    ? 'border-[#4b3fd1] bg-[#4b3fd1]/10 shadow-[0_16px_40px_rgba(75,63,209,0.16)]'
-                    : 'border-black/8 bg-white/70 hover:border-[#4b3fd1]/30'
+                    ? 'border-[#3b35d4] bg-[#eeedfb]'
+                    : 'border-black/10 bg-white hover:border-black/20'
                 }`}
               >
                 <div className="mb-3 flex items-center gap-2">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2 w-2 rounded-full"
                     style={{ backgroundColor: row.color }}
                   />
-                  <div className="truncate text-xs font-black uppercase tracking-[0.12em] text-neutral-600">
+                  <div className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b6b82]">
                     {row.name}
                   </div>
                 </div>
 
                 <div
-                  className={`text-3xl font-light tracking-[-0.06em] ${
+                  className={`text-2xl font-light tracking-[-0.04em] ${
                     positive
-                      ? 'text-emerald-600'
+                      ? 'text-[#0b7a50]'
                       : negative
-                        ? 'text-red-600'
-                        : 'text-neutral-700'
+                        ? 'text-[#c0321f]'
+                        : 'text-[#343448]'
                   }`}
                 >
                   {row.hasData ? fmtPct(row.dayReturn, true) : 'Pending'}
                 </div>
 
-                <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-neutral-500">
+                <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10px] text-[#a8a8be]">
                   <span>{row.latestDate}</span>
                   <span>{row.latestValue ? fmtDollar(row.latestValue) : 'No value'}</span>
                 </div>
@@ -942,25 +1031,27 @@ function YtdFundReturnBanner({
     .sort((a: any, b: any) => Number(a.ytdReturn) - Number(b.ytdReturn))[0];
 
   return (
-    <section className="mb-8 overflow-hidden rounded-[24px] border border-black/8 bg-white/75 shadow-[0_18px_60px_rgba(25,20,90,0.08)] backdrop-blur-md">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/8 px-6 py-4">
+    <section className="mt-4 overflow-hidden rounded-[12px] border border-black/10 bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/10 px-5 py-3">
         <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#4b3fd1]">
+          <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5f5ae0]">
             YTD Fund Return
           </div>
-          <div className="mt-1 text-sm font-medium text-neutral-600">
+          <div className="mt-1 text-xs text-[#6b6b82]">
             Calendar year return from each fund’s first available live observation this year
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 text-xs">
+        <div className="flex flex-wrap gap-2 text-[11px]">
           {best && (
-            <div className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 font-bold text-emerald-700">
+            <div className="flex items-center gap-2 rounded-[6px] border border-emerald-600/20 bg-emerald-50 px-3 py-2 font-mono text-[10px] text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
               Best YTD: {best.name} {fmtPct(best.ytdReturn, true)}
             </div>
           )}
           {worst && (
-            <div className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 font-bold text-red-700">
+            <div className="flex items-center gap-2 rounded-[6px] border border-red-600/20 bg-red-50 px-3 py-2 font-mono text-[10px] text-red-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-600" />
               Weakest YTD: {worst.name} {fmtPct(worst.ytdReturn, true)}
             </div>
           )}
@@ -984,35 +1075,35 @@ function YtdFundReturnBanner({
                   onSelectModel(row.id);
                   onFundSelect?.(row);
                 }}
-                className={`min-w-[245px] rounded-[18px] border px-4 py-4 text-left transition hover:-translate-y-0.5 ${
+                className={`min-w-[245px] rounded-[10px] border px-4 py-4 text-left transition hover:-translate-y-0.5 ${
                   active
-                    ? 'border-[#4b3fd1] bg-[#4b3fd1]/10 shadow-[0_16px_40px_rgba(75,63,209,0.16)]'
-                    : 'border-black/8 bg-white/70 hover:border-[#4b3fd1]/30'
+                    ? 'border-[#3b35d4] bg-[#eeedfb]'
+                    : 'border-black/10 bg-white hover:border-black/20'
                 }`}
               >
                 <div className="mb-3 flex items-center gap-2">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2 w-2 rounded-full"
                     style={{ backgroundColor: row.color }}
                   />
-                  <div className="truncate text-xs font-black uppercase tracking-[0.12em] text-neutral-600">
+                  <div className="truncate font-mono text-[10px] uppercase tracking-[0.16em] text-[#6b6b82]">
                     {row.name}
                   </div>
                 </div>
 
                 <div
-                  className={`text-3xl font-light tracking-[-0.06em] ${
+                  className={`text-2xl font-light tracking-[-0.04em] ${
                     positive
-                      ? 'text-emerald-600'
+                      ? 'text-[#0b7a50]'
                       : negative
-                        ? 'text-red-600'
-                        : 'text-neutral-700'
+                        ? 'text-[#c0321f]'
+                        : 'text-[#343448]'
                   }`}
                 >
                   {row.hasData ? fmtPct(row.ytdReturn, true) : 'Pending'}
                 </div>
 
-                <div className="mt-2 flex items-center justify-between gap-3 text-[11px] text-neutral-500">
+                <div className="mt-2 flex items-center justify-between gap-3 font-mono text-[10px] text-[#a8a8be]">
                   <span>From {row.ytdStart}</span>
                   <span>{row.latestValue ? fmtDollar(row.latestValue) : 'No value'}</span>
                 </div>
@@ -1027,21 +1118,91 @@ function YtdFundReturnBanner({
 }
 
 function ModelComparison({ data }: { data: any }) {
-  const chartData = useMemo(() => {
-    const strategySeries =
-      (data?.modelComparison || []).map((m: any) => ({
-        key: m.name,
-        points: m.points || [],
-      })) || [];
+  const [range, setRange] = useState('1Y');
+  const [chartMode, setChartMode] = useState<'equity' | 'drawdown' | 'rollingSharpe'>('equity');
+  const [modelSearch, setModelSearch] = useState('');
+  const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
+  const [selectedBenchmarkTickers, setSelectedBenchmarkTickers] = useState<string[]>([]);
 
-    const benchmarkSeries =
-      (data?.benchmarks || []).map((b: any) => ({
-        key: `${b.name} (${b.ticker})`,
-        points: b.points || [],
-      })) || [];
+  useEffect(() => {
+    if (selectedModelIds.length || !(data?.modelComparison || []).length) return;
+    setSelectedModelIds((data?.modelComparison || []).map((model: any) => model.id));
+  }, [data?.modelComparison, selectedModelIds.length]);
+
+  useEffect(() => {
+    if (selectedBenchmarkTickers.length || !(data?.benchmarks || []).length) return;
+    setSelectedBenchmarkTickers((data?.benchmarks || []).map((b: any) => b.ticker));
+  }, [data?.benchmarks, selectedBenchmarkTickers.length]);
+
+  const filteredModels = useMemo(() => {
+    const models = data?.modelComparison || [];
+    if (!selectedModelIds.length) return [];
+    return models.filter((m: any) => selectedModelIds.includes(m.id));
+  }, [data?.modelComparison, selectedModelIds]);
+
+  const filteredBenchmarks = useMemo(() => {
+    const benchmarks = data?.benchmarks || [];
+    if (!selectedBenchmarkTickers.length) return [];
+    return benchmarks.filter((b: any) => selectedBenchmarkTickers.includes(b.ticker));
+  }, [data?.benchmarks, selectedBenchmarkTickers]);
+
+  const filteredModelList = useMemo(() => {
+    const term = modelSearch.trim().toLowerCase();
+    const models = data?.modelComparison || [];
+    if (!term) return models;
+    return models.filter((model: any) => String(model?.name || model?.id).toLowerCase().includes(term));
+  }, [data?.modelComparison, modelSearch]);
+
+  const chartSeries = useMemo(() => {
+    const toPoints = (points: any[]) => {
+      if (chartMode === 'drawdown') return computeDrawdownPoints(points);
+      if (chartMode === 'rollingSharpe') return computeRollingSharpePoints(points);
+      return points || [];
+    };
+
+    const strategySeries = filteredModels.map((model: any) => ({
+      key: model.name,
+      points: toPoints(model.points || []),
+    }));
+
+    const benchmarkSeries = filteredBenchmarks.map((benchmark: any) => ({
+      key: `${benchmark.name} (${benchmark.ticker})`,
+      points: toPoints(benchmark.points || []),
+    }));
 
     return mergeSeries([...strategySeries, ...benchmarkSeries]);
-  }, [data]);
+  }, [chartMode, filteredBenchmarks, filteredModels]);
+
+  const filteredChartData = useMemo(() => {
+    if (!chartSeries.length) return chartSeries;
+
+    const lastTimestamp = chartSeries[chartSeries.length - 1]?.timestamp;
+    if (!lastTimestamp) return chartSeries;
+
+    const end = new Date(`${lastTimestamp}T00:00:00Z`);
+    if (Number.isNaN(end.getTime())) return chartSeries;
+
+    const daysByRange: Record<string, number> = {
+      '1D': 1,
+      '1W': 7,
+      '1M': 30,
+      '3M': 90,
+      '6M': 180,
+      '1Y': 365,
+      '3Y': 365 * 3,
+      '5Y': 365 * 5,
+      All: 365 * 50,
+    };
+
+    const days = daysByRange[range] ?? 365;
+    const start = new Date(end);
+    start.setUTCDate(start.getUTCDate() - days);
+
+    return chartSeries.filter((row: any) => {
+      const rowDate = new Date(`${row.timestamp}T00:00:00Z`);
+      return !Number.isNaN(rowDate.getTime()) && rowDate >= start && rowDate <= end;
+    });
+  }, [chartSeries, range]);
 
   const hasBenchmarkData = (data?.benchmarks || []).some((b: any) => b.points?.length);
 
@@ -1059,7 +1220,138 @@ function ModelComparison({ data }: { data: any }) {
       title="Model Comparison"
       subtitle="Compare live model portfolio performance against institutional benchmarks. Solid lines represent live model portfolios normalized to 100. Dashed lines represent SPY, QQQ, DIA, IWM, and VTI benchmarks—all measured from BR-PPO V10 original inception."
     >
-      <ChartFrame title="Normalized Equity Curves">
+      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <div className="rounded-[12px] border border-black/10 bg-white p-4">
+          <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5f5ae0]">Models</div>
+          <div className="mb-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedModelIds((data?.modelComparison || []).map((m: any) => m.id))}
+              className="rounded-[6px] border border-black/10 bg-[#eeeff3] px-2 py-1 text-[10px] font-mono text-[#6b6b82]"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedModelIds([])}
+              className="rounded-[6px] border border-black/10 bg-[#eeeff3] px-2 py-1 text-[10px] font-mono text-[#6b6b82]"
+            >
+              None
+            </button>
+          </div>
+          <input
+            value={modelSearch}
+            onChange={(event) => setModelSearch(event.target.value)}
+            placeholder="Search models..."
+            className="mb-3 w-full rounded-[6px] border border-black/10 bg-[#eeeff3] px-3 py-2 text-[11px] text-[#343448] placeholder-[#a8a8be] outline-none"
+          />
+          <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1">
+            {filteredModelList.map((model: any) => {
+              const checked = selectedModelIds.includes(model.id);
+              return (
+                <label key={model.id} className="flex items-center justify-between gap-3 rounded-[6px] border border-black/10 bg-white px-3 py-2 text-[11px] text-[#343448]">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: model.color || '#3b35d4' }}
+                    />
+                    <span className="truncate">{model.name || model.id}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setSelectedModelIds((prev) =>
+                        prev.includes(model.id)
+                          ? prev.filter((id) => id !== model.id)
+                          : [...prev, model.id]
+                      );
+                    }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#5f5ae0]">Benchmarks</div>
+          <div className="space-y-2">
+            {(data?.benchmarks || []).map((benchmark: any) => {
+              const checked = selectedBenchmarkTickers.includes(benchmark.ticker);
+              return (
+                <label key={benchmark.ticker} className="flex items-center justify-between gap-3 rounded-[6px] border border-black/10 bg-white px-3 py-2 text-[11px] text-[#343448]">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: benchmark.color || '#6b6b82' }}
+                    />
+                    <span className="truncate">{benchmark.name} ({benchmark.ticker})</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setSelectedBenchmarkTickers((prev) =>
+                        prev.includes(benchmark.ticker)
+                          ? prev.filter((ticker) => ticker !== benchmark.ticker)
+                          : [...prev, benchmark.ticker]
+                      );
+                    }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        <ChartFrame
+          title={
+            chartMode === 'drawdown'
+              ? 'Drawdown Curves'
+              : chartMode === 'rollingSharpe'
+                ? 'Rolling Sharpe'
+                : 'Normalized Equity Curves'
+          }
+        >
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 rounded-[6px] border border-black/10 bg-[#eeeff3] px-3 py-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">Range</span>
+            <div className="flex flex-wrap gap-1">
+              {['1D', '1W', '1M', '3M', '6M', '1Y', '3Y', '5Y', 'All'].map((label) => (
+                <button
+                  key={label}
+                  onClick={() => setRange(label)}
+                  className={`rounded-[4px] border px-2 py-1 text-[10px] font-mono transition ${
+                    range === label
+                      ? 'border-[#3b35d4] bg-white text-[#3b35d4]'
+                      : 'border-transparent text-[#6b6b82] hover:text-[#3b35d4]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-[6px] border border-black/10 bg-[#eeeff3] px-3 py-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">Metric</span>
+            {[
+              { key: 'equity', label: 'Equity Curve' },
+              { key: 'drawdown', label: 'Drawdown' },
+              { key: 'rollingSharpe', label: 'Rolling Sharpe' },
+            ].map((mode) => (
+              <button
+                key={mode.key}
+                onClick={() => setChartMode(mode.key as typeof chartMode)}
+                className={`rounded-[4px] border px-2 py-1 text-[10px] font-mono transition ${
+                  chartMode === mode.key
+                    ? 'border-[#3b35d4] bg-white text-[#3b35d4]'
+                    : 'border-transparent text-[#6b6b82] hover:text-[#3b35d4]'
+                }`}
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {/* Benchmark Legend */}
         {(data?.benchmarks || []).length > 0 && (
           <div className="mb-6 flex flex-wrap gap-3 rounded-lg bg-neutral-50 p-4 text-xs">
@@ -1077,81 +1369,102 @@ function ModelComparison({ data }: { data: any }) {
           </div>
         )}
 
-        <div className="h-[900px]">
+        <div className="h-[640px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 16, right: 40, bottom: 16, left: 60 }}>
-              <CartesianGrid stroke="rgba(75,63,209,0.08)" vertical={false} strokeDasharray="3 3" />
+            <LineChart data={filteredChartData} margin={{ top: 16, right: 40, bottom: 16, left: 60 }}>
+              <CartesianGrid stroke="rgba(0,0,0,0.06)" vertical={false} strokeDasharray="4 4" />
               <XAxis
                 dataKey="timestamp"
-                stroke="#999"
-                tick={{ fontSize: 12, fill: '#666', fontWeight: 500 }}
+                stroke="#bdbdd3"
+                tick={{ fontSize: 11, fill: '#6b6b82' }}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
-                minTickGap={40}
-                label={{ value: 'Date', position: 'insideBottomRight', offset: -10, fill: '#999', fontSize: 11 }}
+                axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
+                minTickGap={32}
+                tickFormatter={(value) => formatInceptionDate(String(value))}
               />
               <YAxis
-                stroke="#999"
-                tick={{ fontSize: 12, fill: '#666', fontWeight: 500 }}
+                stroke="#bdbdd3"
+                tick={{ fontSize: 11, fill: '#6b6b82' }}
                 tickLine={false}
-                axisLine={{ stroke: 'rgba(0,0,0,0.1)' }}
+                axisLine={{ stroke: 'rgba(0,0,0,0.08)' }}
                 domain={['auto', 'auto']}
-                label={{ value: 'Performance (Base 100)', angle: -90, position: 'insideLeft', fill: '#999', fontSize: 11 }}
+                tickFormatter={(value) => {
+                  if (chartMode === 'drawdown') return `${Number(value).toFixed(1)}%`;
+                  if (chartMode === 'rollingSharpe') return Number(value).toFixed(2);
+                  return Number(value).toFixed(1);
+                }}
               />
               <Tooltip
                 contentStyle={{
                   ...tooltipStyle,
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  border: '1px solid rgba(75,63,209,0.2)',
-                  borderRadius: '12px',
-                  padding: '12px 16px',
-                  boxShadow: '0 12px 40px rgba(75,63,209,0.15)',
+                  backgroundColor: 'rgba(255,255,255,0.98)',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  borderRadius: '10px',
+                  padding: '10px 12px',
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
                 }}
-                labelStyle={{ color: '#333', fontWeight: 600, fontSize: 13 }}
-                formatter={(value: any) => [typeof value === 'number' ? value.toFixed(2) : value, '']}
+                labelStyle={{ color: '#0d0d14', fontWeight: 600, fontSize: 12 }}
+                labelFormatter={(value) => formatInceptionDate(String(value))}
+                formatter={(value: any, name: any) => [
+                  typeof value === 'number'
+                    ? chartMode === 'drawdown'
+                      ? `${value.toFixed(2)}%`
+                      : value.toFixed(2)
+                    : value,
+                  name,
+                ]}
               />
               <Legend
                 wrapperStyle={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  paddingTop: '20px',
-                  paddingBottom: '12px',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  paddingTop: '14px',
+                  paddingBottom: '6px',
+                  color: '#6b6b82',
                 }}
                 verticalAlign="bottom"
                 height={36}
               />
-              <ReferenceLine
-                y={100}
-                stroke="rgba(0,0,0,0.25)"
-                strokeDasharray="6 4"
-                label={{ value: 'Baseline (100)', position: 'right', fill: '#666', fontSize: 11, offset: 10 }}
-              />
+              {chartMode === 'equity' && (
+                <ReferenceLine
+                  y={100}
+                  stroke="rgba(0,0,0,0.25)"
+                  strokeDasharray="6 4"
+                  label={{ value: 'Baseline (100)', position: 'right', fill: '#6b6b82', fontSize: 10, offset: 8 }}
+                />
+              )}
 
-              {(data?.modelComparison || []).map((m: any) => (
+              {filteredModels.map((m: any) => (
                 <Line
                   key={m.name}
                   type="monotone"
                   dataKey={m.name}
                   stroke={m.color || '#4b3fd1'}
-                  strokeWidth={m.id === data?.selectedModel ? 3.5 : 2.5}
+                  strokeWidth={m.id === data?.selectedModel ? 3 : 1.6}
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
-                  activeDot={{ r: 6, fill: 'white', stroke: m.color, strokeWidth: 2.5 }}
+                  strokeOpacity={m.id === data?.selectedModel ? 1 : 0.65}
+                  activeDot={
+                    m.id === data?.selectedModel
+                      ? { r: 5, fill: 'white', stroke: m.color, strokeWidth: 2 }
+                      : false
+                  }
                 />
               ))}
 
-              {(data?.benchmarks || []).map((b: any) => (
+              {filteredBenchmarks.map((b: any) => (
                 <Line
                   key={`${b.name} (${b.ticker})`}
                   type="monotone"
                   dataKey={`${b.name} (${b.ticker})`}
                   stroke={b.color || '#a0a0a0'}
-                  strokeWidth={2.0}
-                  strokeDasharray="10 5"
+                  strokeWidth={1.6}
+                  strokeDasharray="6 4"
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
+                  strokeOpacity={0.7}
                   activeDot={false}
                 />
               ))}
@@ -1163,12 +1476,13 @@ function ModelComparison({ data }: { data: any }) {
           <div className="mt-6 rounded-2xl border border-[#4b3fd1]/20 bg-[#4b3fd1]/8 p-5 text-sm leading-6 text-[#4b3fd1]">
             <div className="font-bold mb-1">📊 Benchmark data pending</div>
             <div className="text-neutral-600">
-              Benchmark overlay is ready in the chart layer, but benchmark data has not been returned by the API yet. 
+              Benchmark overlay is ready in the chart layer, but benchmark data has not been returned by the API yet.
               Check <code className="text-xs bg-white/50 px-2 py-0.5 rounded">/api/dashboard</code> for the <code className="text-xs bg-white/50 px-2 py-0.5 rounded">benchmarks</code> field.
             </div>
           </div>
         )}
-      </ChartFrame>
+        </ChartFrame>
+      </div>
 
       <DataTable
         title="Common Window Leaderboard — Apples-to-Apples Model Ranking"
@@ -1256,7 +1570,17 @@ function ExecutiveOverview({ data }: { data: any }) {
           <h3 className="mb-6 text-4xl font-light tracking-[-0.07em]">Live Status</h3>
           <InfoRow label="Account Status" value={latestDecision.account_status || 'Pending'} />
           <InfoRow label="Submit Orders" value={String(latestDecision.submit_orders ?? 'Pending')} />
-          <InfoRow label="Current Signal" value={latestDecision.action || 'Pending'} />
+          <InfoRow label="Paper Gate" value={data?.latest?.paperReplayStatus || 'Pending'} />
+          <InfoRow
+            label="Signal Gross"
+            value={
+              data?.latest?.latestSignalGrossWeight === null || data?.latest?.latestSignalGrossWeight === undefined
+                ? 'Pending'
+                : fmtNum(Number(data.latest.latestSignalGrossWeight), 4)
+            }
+          />
+          <InfoRow label="Latest Signal Date" value={data?.latest?.latestSignalDate || 'Pending'} />
+          <InfoRow label="Last Active Signal" value={data?.latest?.lastActiveSignalDate || 'Pending'} />
           <InfoRow label="Last Run" value={data?.latest?.lastRun || 'Pending'} />
           <InfoRow label="Health" value={data?.healthStatus?.overall_status || 'Pending'} />
           <InfoRow label="Observations" value={String(data?.stats?.nObservations ?? 'Pending')} />
@@ -1369,12 +1693,19 @@ function PortfolioExposure({ data }: { data: any }) {
 
 function ExecutionMonitor({ data }: { data: any }) {
   return (
-    <Panel eyebrow="Execution Intelligence" title="Execution Monitor" subtitle="Planned orders, submitted orders, and full execution history from the paper trading workflow.">
+    <Panel eyebrow="Execution Intelligence" title="Execution Monitor" subtitle="Planned orders, submitted orders, readiness checks, and full execution history from the paper trading workflow.">
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <MetricTile label="Paper Replay" value={data?.latest?.paperReplayStatus || 'Pending'} detail="Execution realism gate" />
+        <MetricTile label="Hard Fail" value={String(data?.latest?.realismHardFail ?? 'Pending')} detail="Readiness blocker" />
+        <MetricTile label="Warnings" value={String(data?.latest?.realismWarningCount ?? 'Pending')} detail="Gate warnings" />
+        <MetricTile label="Signal Gross" value={String(data?.latest?.latestSignalGrossWeight ?? 'Pending')} detail="Latest target gross weight" />
+      </div>
       <div className="grid gap-6 lg:grid-cols-2">
         <DataTable title="Latest Planned Orders" rows={data?.plannedOrders || []} />
         <DataTable title="Latest Submitted Orders" rows={data?.submittedOrders || []} />
       </div>
-      <div className="mt-6">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <DataTable title="Execution Readiness Checks" rows={data?.readinessChecks || []} />
         <DataTable title="Submitted Orders History" rows={data?.ordersHistory || []} />
       </div>
     </Panel>
@@ -1447,8 +1778,8 @@ function ModelHealth({ data }: { data: any }) {
       <div className="mb-6 grid gap-4 md:grid-cols-4">
         <MetricTile label="Health Status" value={data?.healthStatus?.overall_status || 'Pending'} detail="Current monitor state" />
         <MetricTile label="Decision Count" value={String(data?.healthStatus?.n_decisions ?? 'Pending')} detail="Logged decisions" />
-        <MetricTile label="Signal Rows" value={String(data?.signalHistory?.length || 0)} detail="Health observations" />
-        <MetricTile label="Portfolio Rows" value={String(data?.equityCurve?.length || 0)} detail="Equity records" />
+        <MetricTile label="Readiness Checks" value={String(data?.readinessChecks?.length || 0)} detail="Execution gate rows" />
+        <MetricTile label="Portfolio Rows" value={String(data?.equityCurve?.length || 0)} detail="Net liquidation records" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -1460,6 +1791,21 @@ function ModelHealth({ data }: { data: any }) {
             {JSON.stringify(data?.healthStatus || {}, null, 2)}
           </pre>
         </div>
+        <div className="rounded-[34px] border border-black/10 bg-white/82 p-6 shadow-[0_28px_100px_rgba(25,20,90,0.12)] backdrop-blur-2xl">
+          <div className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-[#4b3fd1]">
+            Execution Realism Summary
+          </div>
+          <pre className="max-h-[520px] overflow-auto rounded-2xl border border-black/10 bg-[#fbfbfb] p-4 text-xs text-neutral-700">
+            {JSON.stringify(data?.executionRealism || {}, null, 2)}
+          </pre>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <DataTable title="Readiness Checks" rows={data?.readinessChecks || []} />
+      </div>
+
+      <div className="mt-6">
         <DataTable title="Signal History" rows={data?.signalHistory || []} />
       </div>
 
@@ -1476,6 +1822,7 @@ function ModelHealth({ data }: { data: any }) {
               positionsRows: data?.debug?.rowCounts?.positionsRows,
               ordersRows: data?.debug?.rowCounts?.ordersHistoryRows,
               signalRows: data?.debug?.rowCounts?.signalHistoryRows,
+              readinessChecksRows: data?.debug?.rowCounts?.readinessChecksRows,
             },
           ]}
         />
@@ -1489,15 +1836,15 @@ function Tabs({ tabs, panels }: { tabs: string[]; panels: React.ReactNode[] }) {
 
   return (
     <section>
-      <div className="mb-6 flex flex-nowrap items-center gap-0 overflow-x-auto border-b border-[#6e6ec8]/20 bg-[#eeeef6]/80 px-8">
+      <div className="mt-6 flex h-[56px] items-center gap-0 overflow-x-auto border-b border-black/10 bg-white">
         {tabs.map((tab, i) => (
           <button
             key={tab}
             onClick={() => setActive(i)}
-            className={`whitespace-nowrap border-b-2 bg-transparent px-[16px] flex items-center h-[38px] text-[11px] font-sans tracking-[0.2px] transition-all duration-150 ${
+            className={`whitespace-nowrap border-b-2 px-4 text-[12px] transition-all ${
               active === i
-                ? 'border-[#4f46e5] font-semibold text-[#4f46e5]'
-                : 'border-transparent font-medium text-[#9090b8] hover:text-[#4a4a72]'
+                ? 'border-[#3b35d4] text-[#3b35d4] font-medium'
+                : 'border-transparent text-[#a8a8be] hover:text-[#6b6b82]'
             }`}
           >
             {tab}
@@ -1511,42 +1858,65 @@ function Tabs({ tabs, panels }: { tabs: string[]; panels: React.ReactNode[] }) {
 
 function Panel({ eyebrow, title, subtitle, children }: { eyebrow: string; title: string; subtitle: string; children: React.ReactNode }) {
   return (
-    <section className="relative overflow-hidden rounded-[14px] border border-[#6e6ec8]/20 bg-white/60 p-6 mb-4 shadow-sm backdrop-blur-md transition-all duration-300">
-      <div className="relative mb-6">
-        <div className="mb-1 text-[10px] font-bold uppercase tracking-[1.5px] text-[#4f46e5]">{eyebrow}</div>
-        <h2 className="mb-2 text-[2rem] font-serif font-normal tracking-tight text-[#1a1a2e] leading-[1.1]">{title}</h2>
-        <p className="max-w-[700px] text-[12px] font-light leading-[1.6] text-[#4a4a72]">{subtitle}</p>
+    <section className="rounded-[12px] border border-black/10 bg-white p-6">
+      <div className="mb-6">
+        <div className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[#5f5ae0]">{eyebrow}</div>
+        <h2 className="mb-2 text-2xl font-light tracking-[-0.02em] text-[#0d0d14]">{title}</h2>
+        <p className="max-w-[760px] text-xs leading-6 text-[#6b6b82]">{subtitle}</p>
       </div>
-      <div className="relative space-y-4">{children}</div>
+      <div className="space-y-4">{children}</div>
     </section>
   );
 }
 
 function ChartFrame({ title, children, description }: { title: string; children: React.ReactNode; description?: string }) {
   return (
-    <div className="relative overflow-hidden rounded-[10px] border border-[#6e6ec8]/20 bg-white/85 mb-4 shadow-sm backdrop-blur-md">
-      <div className="border-b border-[#6e6ec8]/15 px-4 py-3 flex items-start justify-between">
-        <div className="flex-1">
-          <div className="mb-[3px] text-[10px] font-bold uppercase tracking-[1px] text-[#9090b8]">Chart Analysis</div>
-          <h3 className="text-[13px] font-medium text-[#1a1a2e]">{title}</h3>
-          {description && <p className="mt-1 text-[11px] text-neutral-500">{description}</p>}
+    <div className="rounded-[12px] border border-black/10 bg-white">
+      <div className="flex items-start justify-between border-b border-black/10 px-5 py-4">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">Chart Analysis</div>
+          <h3 className="mt-1 text-sm font-medium text-[#0d0d14]">{title}</h3>
+          {description && <p className="mt-1 text-xs text-[#6b6b82]">{description}</p>}
         </div>
-        <div className="h-5 w-5 border border-[#6e6ec8]/20 rounded flex items-center justify-center text-[10px] text-[#9090b8]" />
+        <div className="h-5 w-5 rounded border border-black/10" />
       </div>
-      <div className="relative p-3 bg-white/50">{children}</div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function DarkChartFrame({
+  title,
+  children,
+  description,
+}: {
+  title: string;
+  children: React.ReactNode;
+  description?: string;
+}) {
+  return (
+    <div className="rounded-[14px] border border-[#1f2431] bg-[#0f1117]">
+      <div className="flex items-start justify-between border-b border-[#1f2431] px-5 py-4">
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#7f8697]">Chart Analysis</div>
+          <h3 className="mt-1 text-sm font-medium text-[#eef1f7]">{title}</h3>
+          {description && <p className="mt-1 text-xs text-[#9aa2b3]">{description}</p>}
+        </div>
+        <div className="h-5 w-5 rounded border border-[#1f2431]" />
+      </div>
+      <div className="p-4">{children}</div>
     </div>
   );
 }
 
 function MetricTile({ label, value, detail, large = false }: { label: string; value: string; detail: string; large?: boolean }) {
   return (
-    <div className="relative overflow-hidden rounded-[10px] border border-[#6e6ec8]/20 bg-white/85 p-4 shadow-sm backdrop-blur-md">
-      <div className="mb-[6px] text-[10px] font-bold uppercase tracking-[0.6px] text-[#9090b8]">{label}</div>
-      <div className={`font-mono font-bold tracking-tight text-[#1a1a2e] ${large ? 'text-[2rem] leading-none' : 'text-[1.65rem] leading-none'}`}>
+    <div className="rounded-[10px] border border-black/10 bg-[#eeeff3] px-4 py-4">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">{label}</div>
+      <div className={`${large ? 'text-2xl' : 'text-[22px]'} mt-2 font-light tracking-[-0.03em] text-[#0d0d14] ${label.includes('Signal') ? 'font-mono text-[12px]' : ''}`}>
         {value}
       </div>
-      <div className="mt-1 text-[10px] text-[#9090b8]">{detail}</div>
-      <div className="absolute top-[10px] right-[10px] flex h-5 w-5 items-center justify-center rounded border border-[#6e6ec8]/20 text-[10px] text-[#9090b8]"></div>
+      <div className="mt-1 text-[11px] text-[#a8a8be]">{detail}</div>
     </div>
   );
 }
@@ -1615,20 +1985,15 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[10px] border border-[#6e6ec8]/20 bg-white/85 shadow-sm backdrop-blur-md mb-4">
-      <div className="border-b border-[#6e6ec8]/15 px-4 py-3">
-        <div className="flex items-center justify-between gap-4 mb-2">
+    <div className="rounded-[12px] border border-black/10 bg-white">
+      <div className="border-b border-black/10 px-5 py-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="mb-[2px] text-[10px] font-bold uppercase tracking-[1px] text-[#9090b8]">
-              Data
-            </div>
-            <h3 className="text-[13px] font-medium text-[#1a1a2e]">
-              {title}
-            </h3>
+            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">Data</div>
+            <h3 className="mt-1 text-sm font-medium text-[#0d0d14]">{title}</h3>
           </div>
 
-          <div className="shrink-0 rounded-[4px] border border-[#6e6ec8]/20 bg-white/80 px-2 py-[2px] text-[10px] font-semibold text-[#4a4a72]">
-            {/* CHANGED: Reflect actual visible rows dynamically if paginated */}
+          <div className="rounded-[4px] border border-black/10 bg-[#eeeff3] px-2 py-[2px] text-[10px] font-semibold text-[#6b6b82]">
             {isRelativePerformanceTable
               ? `${Math.min(visibleCount, filteredAndSorted.length)} / ${filteredAndSorted.length}`
               : `${filteredAndSorted.length} / ${safeRows.length}`}
@@ -1637,10 +2002,10 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
 
         <input
           type="text"
-          placeholder="Search models, assets, or values..."
+          placeholder="Search models, benchmarks, or values..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full border-none border-b border-[#6e6ec8]/15 bg-transparent px-2.5 py-[7px] text-[11px] font-sans text-[#1a1a2e] placeholder-[#9090b8] outline-none transition focus:border-[#4f46e5]"
+          className="mt-3 w-full rounded-[6px] border border-black/10 bg-[#eeeff3] px-3 py-2 text-[11px] text-[#343448] placeholder-[#a8a8be] outline-none focus:border-[#3b35d4]"
         />
       </div>
 
@@ -1654,17 +2019,17 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
         </div>
       ) : (
         <div className="max-w-full overflow-x-auto overflow-y-hidden">
-          <table className="w-full min-w-max border-collapse border-spacing-0 text-left text-[11px]">
+          <table className="w-full min-w-max border-collapse text-left text-[11px]">
             <thead>
               <tr>
                 {columns.map((column, index) => (
                   <th
                     key={column}
                     onClick={() => handleSort(column)}
-                    className={`sticky top-0 z-20 border-b border-[#6e6ec8]/20 bg-white/60 px-[10px] py-[8px] text-[10px] font-bold uppercase tracking-[0.6px] text-[#9090b8] cursor-pointer transition hover:bg-white/80 ${
+                    className={`sticky top-0 z-20 border-b border-black/10 bg-[#eeeff3] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be] cursor-pointer ${
                       index === 0 ? 'left-0 z-30 min-w-[200px]' : 'min-w-[160px]'
                     } ${
-                      sortColumn === column ? 'text-[#4f46e5]' : ''
+                      sortColumn === column ? 'text-[#3b35d4]' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -1683,16 +2048,16 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
                 /* CHANGED: Slice array based on visible component state if it's the target table */
                 .slice(0, isRelativePerformanceTable ? visibleCount : undefined)
                 .map((row, rowIndex) => (
-                <tr key={rowIndex} className="group hover:bg-[#4f46e5]/[0.09]">
+                <tr key={rowIndex} className="group hover:bg-[#fafafc]">
                   {columns.map((column, columnIndex) => {
                     const value = formatTableCell(row?.[column]);
 
                     return (
                       <td
                         key={`${rowIndex}-${column}`}
-                        className={`border-b border-[#6e6ec8]/15 px-[10px] py-[8px] align-middle text-[#1a1a2e] text-[11px] transition-colors duration-200 ${
+                        className={`border-b border-black/10 px-3 py-2 align-middle text-[#0d0d14] text-[11px] ${
                           columnIndex === 0
-                            ? 'sticky left-0 z-10 min-w-[200px] bg-white group-hover:bg-[#f6f6fc]'
+                            ? 'sticky left-0 z-10 min-w-[200px] bg-white group-hover:bg-[#fafafc]'
                             : 'min-w-[160px]'
                         }`}
                         title={value}
@@ -1711,25 +2076,25 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
       )}
 
       {safeRows.length > 0 && columns.length > 6 && (
-        <div className="border-t border-[#6e6ec8]/15 bg-white/40 px-[10px] py-[6px] text-[10px] font-medium text-[#9090b8]">
+        <div className="border-t border-black/10 bg-[#eeeff3] px-3 py-2 text-[10px] text-[#a8a8be]">
           Scroll to view all columns
         </div>
       )}
 
       {/* ADDED: "Read More" Pagination logic exclusively for the Relative Performance Table */}
       {isRelativePerformanceTable && filteredAndSorted.length > 10 && (
-        <div className="flex justify-center border-t border-[#6e6ec8]/15 bg-white/40 px-5 py-3">
+        <div className="flex justify-center border-t border-black/10 bg-[#eeeff3] px-5 py-3">
           {visibleCount < filteredAndSorted.length ? (
             <button
               onClick={() => setVisibleCount((prev) => prev + 10)}
-              className="rounded-[4px] border border-[#6e6ec8]/20 bg-white/80 px-[14px] py-[6px] text-[11px] font-bold text-[#4a4a72] transition hover:bg-white focus:outline-none"
+              className="rounded-[6px] border border-black/10 bg-white px-4 py-2 text-[11px] font-semibold text-[#343448]"
             >
               Read More
             </button>
           ) : (
             <button
               disabled
-              className="cursor-not-allowed rounded-[4px] border border-transparent bg-transparent px-[14px] py-[6px] text-[11px] font-bold text-[#9090b8]"
+              className="cursor-not-allowed rounded-[6px] border border-transparent bg-transparent px-4 py-2 text-[11px] text-[#a8a8be]"
             >
               All entries shown
             </button>
@@ -1742,20 +2107,19 @@ function DataTable({ title, rows }: { title: string; rows: any[] }) {
 
 function ThesisCard({ number, title, text }: { number: string; title: string; text: string }) {
   return (
-    <div className="relative overflow-hidden rounded-[20px] border border-black/8 bg-white/70 p-5 shadow-[0_12px_40px_rgba(25,20,90,0.06)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_rgba(75,63,209,0.12)]">
-      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#4b3fd1]/6 blur-2xl" />
-      <div className="relative mb-6 text-xs font-black tracking-[0.20em] text-[#4b3fd1]/70">{number}</div>
-      <h3 className="relative mb-3 text-lg font-light tracking-[-0.05em] text-black">{title}</h3>
-      <p className="relative text-xs leading-5 text-neutral-500">{text}</p>
+    <div className="rounded-[12px] border border-black/10 bg-white px-5 py-6">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5f5ae0]">{number}</div>
+      <h3 className="mt-3 text-sm font-medium text-[#0d0d14]">{title}</h3>
+      <p className="mt-2 text-xs leading-5 text-[#6b6b82]">{text}</p>
     </div>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-black/10 py-4">
-      <div className="text-xs font-black uppercase tracking-[0.16em] text-neutral-500">{label}</div>
-      <div className="max-w-[55%] text-right text-sm font-bold text-black">{value}</div>
+    <div className="flex items-center justify-between border-b border-black/10 py-3">
+      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#a8a8be]">{label}</div>
+      <div className="max-w-[55%] text-right text-sm font-medium text-[#0d0d14]">{value}</div>
     </div>
   );
 }
@@ -1763,10 +2127,10 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function StatusBadge({ label, muted = false }: { label: string; muted?: boolean }) {
   return (
     <div
-      className={`rounded-[12px] border px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition-all duration-300 ${
+      className={`rounded-[20px] border px-4 py-2 font-mono text-[10px] uppercase tracking-[0.14em] ${
         muted
-          ? 'border-black/8 bg-white/60 text-neutral-500 hover:bg-white/80'
-          : 'border-[#4b3fd1]/30 bg-[#4b3fd1]/20 text-[#4b3fd1] shadow-[0_8px_20px_rgba(75,63,209,0.15)] hover:shadow-[0_12px_30px_rgba(75,63,209,0.25)]'
+          ? 'border-black/10 bg-[#eeeff3] text-[#6b6b82]'
+          : 'border-[#3b35d4]/30 bg-[#eeedfb] text-[#3b35d4]'
       }`}
     >
       {label}
@@ -1776,44 +2140,20 @@ function StatusBadge({ label, muted = false }: { label: string; muted?: boolean 
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="border border-black/8 bg-white/60 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500 backdrop-blur-md transition-all duration-200 hover:bg-white/80 hover:text-neutral-700">
+    <span className="rounded-[20px] border border-black/10 bg-[#fafafc] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[#6b6b82]">
       {children}
     </span>
   );
 }
 
-function QLogo() {
-  return (
-    <QSentiaLogo
-      theme="dark"
-      alt="Qsentia"
-      width={480}
-      height={160}
-      className="h-auto w-auto max-h-[180px] max-w-[480px] object-contain"
-    />
-  );
-}
-
-function CornerMarks() {
-  return (
-    <>
-      <div className="absolute left-4 top-4 h-4 w-4 border-l border-t border-[#4b3fd1]/20" />
-      <div className="absolute right-4 top-4 h-4 w-4 border-r border-t border-[#4b3fd1]/20" />
-      <div className="absolute bottom-4 left-4 h-4 w-4 border-b border-l border-[#4b3fd1]/20" />
-      <div className="absolute bottom-4 right-4 h-4 w-4 border-b border-r border-[#4b3fd1]/20" />
-    </>
-  );
-}
-
 function LoadingScreen({ text }: { text: string }) {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#070815] text-[#edf0fb]">
-      <QSentiaMotionBackground />
-      <div className="relative z-10 rounded-[40px] border border-white/10 bg-white/6 p-10 text-center shadow-[0_36px_130px_rgba(5,7,18,0.45)] backdrop-blur-2xl">
-        <div className="mx-auto mb-6 flex justify-center">
-          <QLogo />
+    <main className="flex min-h-screen items-center justify-center bg-[#f4f4f6] text-[#0d0d14]">
+      <div className="rounded-[16px] border border-black/10 bg-white px-10 py-8 text-center">
+        <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center border-2 border-black font-mono text-lg">
+          Q
         </div>
-        <div className="text-sm font-black uppercase tracking-[0.22em] text-[#4b3fd1]">{text}</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5f5ae0]">{text}</div>
       </div>
     </main>
   );
@@ -1844,6 +2184,50 @@ function mergeSeries(series: { key: string; points: { timestamp: string; value: 
   return Object.values(byTimestamp).sort(
     (a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
+}
+
+function computeDrawdownPoints(points: { timestamp: string; value: number }[]) {
+  const sorted = sortPoints(points as any);
+  let peak = 0;
+
+  return sorted.map((point) => {
+    const value = Number(point.value);
+    if (!Number.isFinite(value)) return { timestamp: point.timestamp, value: 0 };
+    peak = Math.max(peak, value);
+    const drawdown = peak ? value / peak - 1 : 0;
+    return { timestamp: point.timestamp, value: drawdown * 100 };
+  });
+}
+
+function computeRollingSharpePoints(points: { timestamp: string; value: number }[], window = 20) {
+  const sorted = sortPoints(points as any);
+  const values = sorted.map((point) => Number(point.value));
+  const returns: number[] = [];
+
+  for (let i = 1; i < values.length; i++) {
+    const prev = values[i - 1];
+    const cur = values[i];
+    if (!Number.isFinite(prev) || !Number.isFinite(cur) || prev === 0) {
+      returns.push(0);
+    } else {
+      returns.push(cur / prev - 1);
+    }
+  }
+
+  return sorted.map((point, idx) => {
+    if (idx === 0 || idx > returns.length) {
+      return { timestamp: point.timestamp, value: 0 };
+    }
+
+    const start = Math.max(0, idx - window);
+    const slice = returns.slice(start, idx);
+    const mean = slice.reduce((sum, v) => sum + v, 0) / Math.max(slice.length, 1);
+    const variance = slice.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / Math.max(slice.length - 1, 1);
+    const std = Math.sqrt(variance);
+    const sharpe = std > 0 ? (mean / std) * Math.sqrt(252) : 0;
+
+    return { timestamp: point.timestamp, value: sharpe };
+  });
 }
 
 function fmtBenchmarkLatestValue(benchmark: any) {
