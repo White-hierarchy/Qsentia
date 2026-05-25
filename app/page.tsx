@@ -268,7 +268,8 @@ function heatClass(value: number, isDark: boolean) {
 
 export default function HomePage() {
   const [activeStep, setActiveStep] = useState(0);
-  const [isDark] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [heatmapModel, setHeatmapModel] = useState('');
   const [heatmapMonth, setHeatmapMonth] = useState('All Months');
   const [heatmapYear, setHeatmapYear] = useState('All Years');
@@ -557,6 +558,62 @@ export default function HomePage() {
   return (
     <main className={`relative min-h-screen overflow-x-hidden ${isDark ? 'bg-[#0e0c1e] text-white' : 'bg-[#fbfbfb] text-black'}`}>
       <QSentiaMotionBackground />
+
+      {/* NAVIGATION */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 border-b ${isDark ? 'border-white/10 bg-[#11102a]/70' : 'border-[#e0e0f7] bg-white/70'} backdrop-blur-xl`}>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-6">
+          <div className="flex items-center">
+            <Image
+              src="/logo/qsentia-primary.png"
+              alt="QSentia Logo"
+              width={200}
+              height={60}
+              className="h-8 w-auto sm:h-10"
+              priority
+            />
+          </div>
+          <div className="hidden items-center gap-6 text-sm font-medium md:flex">
+            <a href="#strategy" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Strategy</a>
+            <a href="#framework" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Framework</a>
+            <a href="#performance" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Performance</a>
+            <a href="#approach" className={isDark ? 'text-[#c4c4e8] hover:text-white' : 'text-[#4a4a72] hover:text-[#4f46e5]'}>Approach</a>
+            <button
+              type="button"
+              onClick={() => setIsDark((prev) => !prev)}
+              className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}
+            >
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+            <a href="mailto:Lucas.Zarzeczny@qsentia.com" className={`rounded-md border px-3 py-1 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-[#4f46e5] text-[#4f46e5] hover:bg-[#4f46e5] hover:text-white'}`}>Contact</a>
+          </div>
+          <button
+            type="button"
+            aria-label="Toggle menu"
+            onClick={() => setIsMenuOpen((prev) => !prev)}
+            className={`md:hidden rounded-md border p-2 ${isDark ? 'border-white/20 text-white' : 'border-[#4f46e5] text-[#4f46e5]'}`}
+          >
+            <Icon name={isMenuOpen ? 'close' : 'menu'} className="h-4 w-4" />
+          </button>
+        </div>
+        {isMenuOpen && (
+          <div className={`md:hidden border-t ${isDark ? 'border-white/10 bg-[#11102a]/95' : 'border-[#e0e0f7] bg-white/95'}`}>
+            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 text-sm">
+              <a href="#strategy" className={isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]'}>Strategy</a>
+              <a href="#framework" className={isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]'}>Framework</a>
+              <a href="#performance" className={isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]'}>Performance</a>
+              <a href="#approach" className={isDark ? 'text-[#c4c4e8]' : 'text-[#4a4a72]'}>Approach</a>
+              <button
+                type="button"
+                onClick={() => setIsDark((prev) => !prev)}
+                className={`rounded-md border px-3 py-2 text-left ${isDark ? 'border-white/20 text-white' : 'border-[#4f46e5] text-[#4f46e5]'}`}
+              >
+                {isDark ? 'Light theme' : 'Dark theme'}
+              </button>
+              <a href="mailto:Lucas.Zarzeczny@qsentia.com" className={`rounded-md border px-3 py-2 ${isDark ? 'border-white/20 text-white' : 'border-[#4f46e5] text-[#4f46e5]'}`}>Contact</a>
+            </div>
+          </div>
+        )}
+      </nav>
 
       {/* HERO SECTION */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 text-center pt-28 sm:pt-32">
@@ -1143,6 +1200,11 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-[#6666aa]">Intelligent reinforcement learning for quantitative finance. Where machine precision meets market perception.</p>
               <p className="text-xs text-[#5555aa] mt-4">© 2026 QSentia. All rights reserved.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#6666aa]">
+                <Link href="/privacy" className="hover:text-[#a5b4fc]">Privacy Policy</Link>
+                <span className="text-[#44446a]">|</span>
+                <Link href="/disclaimer" className="hover:text-[#a5b4fc]">Disclaimer</Link>
+              </div>
             </div>
             <div>
               <div className="text-xs uppercase tracking-widest text-white mb-3">Product</div>
@@ -1160,8 +1222,8 @@ export default function HomePage() {
           <div className="text-xs text-[#44446a] flex flex-col md:flex-row justify-between items-start md:items-center pt-6">
             <span>Investments in securities are subject to market risk. Past performance is not indicative of future results.</span>
             <div className="flex gap-4 mt-3 md:mt-0">
-              <Link href="/privacy" className="hover:text-[#a5b4fc]">Privacy</Link>
-              <Link href="/disclaimer" className="hover:text-[#a5b4fc]">Disclaimer</Link>
+              <a href="#" className="hover:text-[#a5b4fc]">Privacy</a>
+              <a href="#" className="hover:text-[#a5b4fc]">Terms</a>
               <a href="mailto:Lucas.Zarzeczny@qsentia.com" className="hover:text-[#a5b4fc]">Contact</a>
             </div>
           </div>
