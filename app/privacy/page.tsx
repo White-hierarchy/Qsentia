@@ -7,145 +7,149 @@ export const metadata: Metadata = {
   description: 'Privacy Policy for the Qsentia investor intelligence platform.',
 };
 
-const updatedAt = 'May 26, 2026';
+const updatedAt = 'May 2026';
 
 const sections = [
+  {
+    title: 'Overview',
+    body: (
+      <>
+        <p>
+          QSentia is a research and analytics platform that displays simulated and paper-trading
+          investment strategy performance. The platform is intended for educational, research, and
+          informational purposes only.
+        </p>
+        <p>QSentia does not manage customer funds, custody assets, execute trades on behalf of users, or provide brokerage services.</p>
+      </>
+    ),
+  },
   {
     title: 'Information We Collect',
     body: (
       <>
-        <p>
-          We may collect information you provide directly to us, including your name, email address,
-          company affiliation, and any message you submit through forms or email.
-        </p>
-        <p>We may also collect information automatically when you use the site:</p>
+        <p>We may collect limited technical and usage information, including:</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Device and browser information.</li>
-          <li>IP address, approximate location, and referral data.</li>
-          <li>Pages viewed, time spent, and interaction data.</li>
-          <li>Cookie and analytics information used to maintain site performance.</li>
+          <li>Browser type and device information</li>
+          <li>IP address and approximate geographic region</li>
+          <li>Website usage analytics and interaction data</li>
+          <li>Authentication or login-related information if applicable</li>
+          <li>Voluntarily submitted contact information</li>
         </ul>
+        <p className="mt-2">We do not collect or store brokerage account credentials, banking information, or payment card information on the platform.</p>
       </>
     ),
   },
   {
-    title: 'How We Use Information',
+    title: 'Paper Trading and Simulated Data',
     body: (
       <>
-        <p>We use collected information to:</p>
+        <p>
+          The strategies and portfolio data displayed on QSentia are based on simulated or
+          paper-trading environments unless explicitly stated otherwise. No real-money investment
+          accounts are managed through the platform.
+        </p>
+        <p>Performance data shown may include:</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Operate, secure, and improve the website and related services.</li>
-          <li>Respond to inquiries and provide requested investor information.</li>
-          <li>Analyze traffic, usage patterns, and system performance.</li>
-          <li>Maintain compliance, detect misuse, and protect against fraud.</li>
-          <li>Communicate relevant updates, if you have opted in to receive them.</li>
+          <li>Simulated portfolio returns</li>
+          <li>Backtested strategy results</li>
+          <li>Paper trading results</li>
+          <li>Hypothetical allocation models</li>
+          <li>AI-generated research outputs</li>
         </ul>
+        <p className="mt-2">These results do not represent actual client investment performance.</p>
       </>
     ),
   },
   {
-    title: 'Legal Basis for Processing',
+    title: 'Use of Third-Party Services',
     body: (
       <>
-        <p>Where applicable, we process personal information on the following bases:</p>
+        <p>QSentia may integrate with third-party services including:</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Your consent, where required.</li>
-          <li>Our legitimate interests in operating and improving the platform.</li>
-          <li>Performance of a contract or pre-contractual request.</li>
-          <li>Compliance with legal obligations and regulatory requirements.</li>
+          <li>Interactive Brokers paper trading environments</li>
+          <li>Alpaca paper trading APIs</li>
+          <li>GitHub</li>
+          <li>Vercel</li>
+          <li>Cloud hosting providers</li>
+          <li>Financial market data providers</li>
         </ul>
+        <p className="mt-2">These services maintain their own privacy policies and terms.</p>
       </>
     ),
   },
   {
-    title: 'Sharing and Disclosure',
+    title: 'Data Security',
     body: (
       <>
-        <p>We do not sell personal information. We may share limited data with:</p>
+        <p>
+          Reasonable efforts are made to secure platform infrastructure and data. However, no
+          internet-based system can guarantee absolute security.
+        </p>
+        <p>Users should not upload sensitive personal, financial, or confidential information to the platform.</p>
+      </>
+    ),
+  },
+  {
+    title: 'Cookies and Analytics',
+    body: (
+      <>
+        <p>
+          The platform may use cookies, analytics tools, and similar technologies to improve
+          performance, monitor usage, and enhance the user experience.
+        </p>
+      </>
+    ),
+  },
+  {
+    title: 'No Financial Advice',
+    body: (
+      <>
+        <p>The information displayed on QSentia does not constitute:</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Service providers that help us host, secure, and analyze the site.</li>
-          <li>Professional advisers, auditors, or legal counsel when necessary.</li>
-          <li>Authorities or third parties when required by law or to protect rights.</li>
-          <li>Counterparties in connection with a corporate transaction, if applicable.</li>
+          <li>Investment advice</li>
+          <li>Financial planning advice</li>
+          <li>Tax advice</li>
+          <li>Legal advice</li>
+          <li>Trading recommendations</li>
         </ul>
+        <p className="mt-2">Users are solely responsible for their own investment decisions.</p>
       </>
     ),
   },
   {
-    title: 'Security and Retention',
+    title: 'Limitation of Liability',
     body: (
       <>
-        <p>
-          We use administrative, technical, and organizational safeguards designed to protect
-          information against unauthorized access, loss, or misuse.
-        </p>
-        <p>
-          No method of transmission or storage is completely secure. We retain information for as long
-          as necessary to fulfill the purposes described in this policy, satisfy legal requirements,
-          resolve disputes, and enforce agreements.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: 'Your Rights and Choices',
-    body: (
-      <>
-        <p>Depending on your location, you may have the right to:</p>
+        <p>QSentia and its operators are not liable for:</p>
         <ul className="list-disc space-y-2 pl-6">
-          <li>Access, correct, or delete personal information.</li>
-          <li>Object to or restrict certain processing activities.</li>
-          <li>Withdraw consent where processing is based on consent.</li>
-          <li>Request portability of your personal information, where applicable.</li>
+          <li>Financial losses</li>
+          <li>Trading losses</li>
+          <li>Data inaccuracies</li>
+          <li>Downtime or interruptions</li>
+          <li>Reliance on simulated or hypothetical results</li>
         </ul>
+        <p className="mt-2">Use of the platform is at the user's own risk.</p>
+      </>
+    ),
+  },
+  {
+    title: 'Changes to This Policy',
+    body: (
+      <>
         <p>
-          To exercise these rights, contact us using the details below. We may need to verify your
-          identity before responding to a request.
+          This Privacy Policy may be updated periodically without prior notice. Continued use of the
+          platform constitutes acceptance of any updated terms.
         </p>
       </>
     ),
   },
   {
-    title: 'Cookies and Tracking',
+    title: 'Contact',
     body: (
       <>
         <p>
-          We may use cookies and similar technologies to support core functionality, remember
-          preferences, measure performance, and understand how visitors use the site. You can usually
-          control cookies through your browser settings, but some features may not work properly if
-          cookies are disabled.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: 'International Transfers and Children',
-    body: (
-      <>
-        <p>
-          Your information may be processed in countries other than your own, which may have different
-          data protection laws. Where required, we implement appropriate safeguards for such transfers.
-        </p>
-        <p>
-          Our website is not directed to children under the age of 13, and we do not knowingly collect
-          personal information from children.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: 'Contact Us',
-    body: (
-      <>
-        <p>
-          If you have questions about this Privacy Policy or our data practices, please contact us at{' '}
-          <a
-            className="font-semibold text-[#a5b4fc] underline decoration-[#a5b4fc]/30 underline-offset-4"
-            href="mailto:Lucas.Zarzeczny@qsentia.com"
-          >
-            Lucas.Zarzeczny@qsentia.com
-          </a>
-          .
+          For questions regarding this Privacy Policy, contact the platform administrator through
+          the official QSentia website or repository contact channels.
         </p>
       </>
     ),
